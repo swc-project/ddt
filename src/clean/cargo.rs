@@ -53,7 +53,7 @@ impl CleanCommand {
                 return Ok(());
             }
 
-            let deps = read_deps_dir(&base_dir.join(".fingerprint")).await?;
+            let deps = read_deps_dir(&base_dir.join("deps")).await?;
 
             dbg!(deps);
 
@@ -76,7 +76,7 @@ async fn read_deps_dir(dir: &Path) -> Result<Vec<DepFile>> {
         let mut files = vec![];
 
         while let Some(e) = entries.next_entry().await? {
-            if e.path().ends_with(".d") {
+            if e.path().extension().map_or(false, |ext| ext == "d") {
                 let content = fs::read_to_string(e.path()).await?;
                 let file = parse_dep_file(&content)?;
                 files.push(file);
