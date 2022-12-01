@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use clap::Args;
+use futures::future::try_join_all;
 use tokio::process::Command;
 
 /// Clean unused, old project files.
@@ -29,6 +30,10 @@ impl CleanCommand {
             .await
             .with_context(|| format!("failed to find git projects from {}", self.dir.display()))?;
 
+        try_join_all(git_projects.iter().map(|dir| run_git_fetch_all_prune(dir)))
+            .await
+            .context("failed to run step 1: git fetch")?;
+
         Ok(())
     }
 }
@@ -38,7 +43,7 @@ async fn find_git_projects(dir: &Path) -> Result<Vec<PathBuf>> {
 }
 
 /// - `dir`: The root directory of git repository.
-async fn run_git_fetch_all_prune(dir: PathBuf) -> Result<()> {
+async fn run_git_fetch_all_prune(dir: &Path) -> Result<()> {
     let mut c = Command::new("git");
     c.arg("fetch").arg("--all").arg("--prune");
     c.kill_on_drop(true);
