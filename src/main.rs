@@ -1,6 +1,7 @@
-use crate::clean::CleanCommand;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+
+use crate::clean::CleanCommand;
 
 mod clean;
 
@@ -18,9 +19,13 @@ enum Command {
 #[tokio::main]
 
 async fn main() -> Result<()> {
-    let args = Args::parse();
+    let args: Args = Args::parse();
 
-    println!("Hello, world!");
+    match args.cmd {
+        Command::Clean(cmd) => {
+            cmd.run().await?;
+        }
+    }
 
     Ok(())
 }
