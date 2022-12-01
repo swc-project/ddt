@@ -30,11 +30,23 @@ impl CleanCommand {
 
             // Calculate current dependencies
 
+            let used_package_dirs = metadata
+                .packages
+                .iter()
+                .map(|pkg| {
+                    pkg.manifest_path
+                        .parent()
+                        .unwrap()
+                        .as_std_path()
+                        .to_path_buf()
+                })
+                .collect::<Vec<_>>();
+
             let target_dir = metadata.target_directory.as_std_path().to_path_buf();
 
             try_join!(
-                self.clean_one_target(&target_dir, "debug"),
-                self.clean_one_target(&target_dir, "release"),
+                self.clean_one_target(&used_package_dirs, &target_dir, "debug"),
+                self.clean_one_target(&used_package_dirs, &target_dir, "release"),
             )?;
 
             Ok(())
@@ -48,7 +60,12 @@ impl CleanCommand {
         })
     }
 
-    async fn clean_one_target(&self, target_dir: &Path, flavor: &str) -> Result<()> {
+    async fn clean_one_target(
+        &self,
+        used_package_dirs: &[PathBuf],
+        target_dir: &Path,
+        flavor: &str,
+    ) -> Result<()> {
         wrap(async move {
             let base_dir = target_dir.join(flavor);
 
@@ -61,8 +78,13 @@ impl CleanCommand {
             try_join_all(dep_files.iter().map(|dep| {
                 wrap(async move {
                     for (_, deps) in dep.map.iter() {
-                        // Workspace-local file
-                        if deps.iter().any(|path| path.is_relative()) {
+                        if deps.iter().any(|dep| {
+                            dep.ancestors().any(|dir| {
+                                used_package_dirs
+                                    .iter()
+                                    .any(|used_package_dir| used_package_dir == dir)
+                            })
+                        }) {
                             return Ok(());
                         }
                     }
