@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use cargo_metadata::CargoOpt;
 use clap::Args;
 use futures::{future::try_join_all, try_join};
 use tokio::process::Command;
@@ -56,7 +57,7 @@ impl CleanCommand {
             try_join_all(
                 git_projects
                     .iter()
-                    .map(|git_dir| self.remove_unused_files(git_dir)),
+                    .map(|git_dir| self.remove_unused_files_of_cargo(git_dir)),
             )
             .await
             .context("failed to clean up unused files")
@@ -68,8 +69,28 @@ impl CleanCommand {
     }
 
     /// Clean up `target` of cargo
-    async fn remove_unused_files(&self, git_dir: &Path) -> Result<()> {
-        Ok(())
+    async fn remove_unused_files_of_cargo(&self, git_dir: &Path) -> Result<()> {
+        wrap(async move {
+            let metadata = cargo_metadata::MetadataCommand::new()
+                .current_dir(git_dir)
+                .features(CargoOpt::AllFeatures)
+                .exec();
+            // Not a cargo project?
+            // TODO: Log
+            let metadata = match metadata {
+                Ok(metadata) => metadata,
+                Err(_) => return Ok(()),
+            };
+
+            Ok(())
+        })
+        .await
+        .with_context(|| {
+            format!(
+                "failed to clean up cargo target dir at {}",
+                git_dir.display()
+            )
+        })
     }
 
     async fn remove_dead_branches(&self, git_dir: &Path) -> Result<()> {
