@@ -55,6 +55,8 @@ impl CleanCommand {
 
             let fingerprints = read_cargo_fingerprints(&base_dir.join(".fingerprint")).await?;
 
+            dbg!(fingerprints);
+
             Ok(())
         })
         .await
@@ -69,11 +71,24 @@ struct Fingerprint {}
 /// `dir`: `.fingerprint`
 async fn read_cargo_fingerprints(dir: &Path) -> Result<Vec<Fingerprint>> {
     wrap(async move {
-        let entries = fs::read_dir(dir).await?;
+        let mut entries = fs::read_dir(dir).await?;
+        let mut fingerprints = vec![];
 
-        while let Some(e) = entries.next_entry().await? {}
+        while let Some(e) = entries.next_entry().await? {
+            let mut files = fs::read_dir(e.path()).await?;
 
-        Ok(())
+            while let Some(f) = files.next_entry().await? {
+                let path = f.path();
+                if path.extension().map(|s| s == "json").unwrap_or(false) {
+                    let content = fs::read_to_string(path).await?;
+                    let fingerprint: Fingerprint = serde_json::from_str(&content)?;
+
+                    fingerprints.push(fingerprint);
+                }
+            }
+        }
+
+        Ok(fingerprints)
     })
     .await
     .with_context(|| format!("failed to read cargo fingerprints at {}", dir.display()))
