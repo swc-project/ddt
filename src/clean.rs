@@ -68,7 +68,9 @@ impl CleanCommand {
         Ok(())
     }
 
-    /// Clean up `target` of cargo
+    /// Clean up `target` of cargo.
+    ///
+    /// We only remove build outputs for outdated dependencies.
     async fn remove_unused_files_of_cargo(&self, git_dir: &Path) -> Result<()> {
         wrap(async move {
             let metadata = cargo_metadata::MetadataCommand::new()
@@ -81,6 +83,8 @@ impl CleanCommand {
                 Ok(metadata) => metadata,
                 Err(_) => return Ok(()),
             };
+
+            // Calculate current dependencies
 
             Ok(())
         })
