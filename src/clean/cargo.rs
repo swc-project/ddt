@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
 use cargo_metadata::{CargoOpt, MetadataCommand};
@@ -67,7 +70,7 @@ impl CleanCommand {
 /// .d file
 #[derive(Debug)]
 struct DepFile {
-    map: HashMap<String, Vec<String>, ahash::RandomState>,
+    map: HashMap<PathBuf, Vec<PathBuf>, ahash::RandomState>,
 }
 
 async fn read_deps_dir(dir: &Path) -> Result<Vec<DepFile>> {
@@ -97,8 +100,8 @@ fn parse_dep_file(s: &str) -> Result<DepFile> {
         .map(|line| line.split_once(':').unwrap())
         .map(|(k, v)| {
             (
-                k.to_string(),
-                v.split_whitespace().map(|s| s.to_string()).collect(),
+                PathBuf::from(k),
+                v.split_whitespace().map(PathBuf::from).collect(),
             )
         })
         .collect();
