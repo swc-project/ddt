@@ -16,6 +16,9 @@ pub(crate) struct CleanCommand {
     dry_run: bool,
 
     /// The directory to clean.
+    ///
+    /// If this is a child of a git repository, this command will run `git fetch
+    /// --all --prune` on it and clean only subdirectories.
     dir: PathBuf,
 }
 
@@ -33,4 +36,6 @@ async fn find_git_projects(dir: &Path) -> Result<Vec<PathBuf>> {
     Ok(vec![])
 }
 
-async fn run_git_fetch_all_prune(dir: PathBuf) -> Result<()> {}
+async fn run_git_fetch_all_prune(dir: PathBuf) -> Result<()> {
+    Ok(())
+}
