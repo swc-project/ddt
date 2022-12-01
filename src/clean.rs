@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    process::Stdio,
+};
 
 use anyhow::{Context, Result};
 use clap::Args;
@@ -30,9 +33,62 @@ impl CleanCommand {
             .await
             .with_context(|| format!("failed to find git projects from {}", self.dir.display()))?;
 
-        try_join_all(git_projects.iter().map(|dir| run_git_fetch_all_prune(dir)))
+        try_join_all(
+            git_projects
+                .iter()
+                .map(|git_dir| run_git_fetch_all_prune(git_dir)),
+        )
+        .await
+        .context("failed to run git fetch step")?;
+
+        try_join_all(
+            git_projects
+                .iter()
+                .map(|git_dir| self.remove_dead_branches(git_dir)),
+        )
+        .await
+        .context("failed to clean up dead branches")?;
+
+        Ok(())
+    }
+
+    async fn remove_dead_branches(&self, git_dir: &Path) -> Result<()> {
+        let branches = Command::new("git")
+            .arg("for-each-ref")
+            .arg("--format")
+            .arg("'%(refname:short) %(upstream:track)'")
+            .current_dir(git_dir)
+            .stderr(Stdio::inherit())
+            .kill_on_drop(true)
+            .output()
             .await
-            .context("failed to run git fetch step")?;
+            .context("failed to get git refs")?;
+
+        let branches = String::from_utf8(branches.stdout)
+            .context("failed to parse output of git refs as utf9")?;
+
+        for line in branches.lines() {
+            let items = line.split_whitespace().collect::<Vec<_>>();
+            if items.len() == 3 && items[2] == "[gone]" {
+                let branch = items[0];
+
+                let _status = Command::new("git")
+                    .arg("branch")
+                    .arg("-D")
+                    .arg(branch)
+                    .current_dir(git_dir)
+                    .kill_on_drop(true)
+                    .status()
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "failed to delete branch {} from {}",
+                            branch,
+                            git_dir.display()
+                        )
+                    })?;
+            }
+        }
 
         Ok(())
     }
@@ -50,7 +106,7 @@ async fn find_git_projects(dir: &Path) -> Result<Vec<PathBuf>> {
 }
 
 /// - `dir`: The root directory of git repository.
-async fn run_git_fetch_all_prune(dir: &Path) -> Result<()> {
+async fn run_git_fetch_all_prune(git_dir: &Path) -> Result<()> {
     let mut c = Command::new("git");
     c.arg("fetch").arg("--all").arg("--prune");
     c.kill_on_drop(true);
@@ -59,7 +115,7 @@ async fn run_git_fetch_all_prune(dir: &Path) -> Result<()> {
     let _status = c.status().await.with_context(|| {
         format!(
             "failed to get status of `git fetch --all --prune` for {}",
-            dir.display()
+            git_dir.display()
         )
     })?;
 
