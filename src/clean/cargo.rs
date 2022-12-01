@@ -73,9 +73,15 @@ struct Fingerprint {
     target: u128,
     profile: u128,
     path: u128,
-    deps: (u128, String, bool, u128),
+    deps: Vec<(u128, String, bool, u128)>,
 
-    local: LocalData,
+    local: Vec<LocalData>,
+
+    rustflags: Vec<String>,
+
+    metadata: u128,
+    config: u128,
+    compile_kind: u128,
 }
 
 #[derive(Debug, Deserialize)]
@@ -86,6 +92,7 @@ struct LocalData {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct CheckDepInfo {
     dep_info: String,
 }
