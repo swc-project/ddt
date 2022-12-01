@@ -48,7 +48,7 @@ impl CleanCommand {
 
     async fn clean_one_target(&self, target_dir: &Path, flavor: &str) -> Result<()> {
         wrap(async move {
-            let base_dir = target_dir.join("flavor");
+            let base_dir = target_dir.join(flavor);
             if !base_dir.exists() {
                 return Ok(());
             }
