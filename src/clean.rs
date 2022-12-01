@@ -55,16 +55,13 @@ async fn run_git_fetch_all_prune(dir: &Path) -> Result<()> {
     c.arg("fetch").arg("--all").arg("--prune");
     c.kill_on_drop(true);
 
-    let status = c.status().await.with_context(|| {
+    // TODO: Log status code
+    let _status = c.status().await.with_context(|| {
         format!(
             "failed to get status of `git fetch --all --prune` for {}",
             dir.display()
         )
     })?;
-
-    if !status.success() {
-        bail!("`git fetch --all --prune` failed for {}", dir.display());
-    }
 
     Ok(())
 }
