@@ -56,7 +56,7 @@ impl CleanCommand {
         let branches = Command::new("git")
             .arg("for-each-ref")
             .arg("--format")
-            .arg("'%(refname:short) %(upstream:track)'")
+            .arg("%(refname:short) %(upstream:track)")
             .current_dir(git_dir)
             .stderr(Stdio::inherit())
             .kill_on_drop(true)
@@ -69,9 +69,10 @@ impl CleanCommand {
 
         for line in branches.lines() {
             let items = line.split_whitespace().collect::<Vec<_>>();
-            if items.len() == 3 && items[2] == "[gone]" {
+            if items.len() == 2 && items[1] == "[gone]" {
                 let branch = items[0];
 
+                // TODO: Log status
                 let _status = Command::new("git")
                     .arg("branch")
                     .arg("-D")
