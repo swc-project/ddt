@@ -72,22 +72,26 @@ impl CleanCommand {
             if items.len() == 2 && items[1] == "[gone]" {
                 let branch = items[0];
 
-                // TODO: Log status
-                let _status = Command::new("git")
-                    .arg("branch")
-                    .arg("-D")
-                    .arg(branch)
-                    .current_dir(git_dir)
-                    .kill_on_drop(true)
-                    .status()
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "failed to delete branch {} from {}",
-                            branch,
-                            git_dir.display()
-                        )
-                    })?;
+                if self.dry_run {
+                    println!("git branch -D {} # {}", branch, git_dir.display());
+                } else {
+                    // TODO: Log status
+                    let _status = Command::new("git")
+                        .arg("branch")
+                        .arg("-D")
+                        .arg(branch)
+                        .current_dir(git_dir)
+                        .kill_on_drop(true)
+                        .status()
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "failed to delete branch {} from {}",
+                                branch,
+                                git_dir.display()
+                            )
+                        })?;
+                }
             }
         }
 
