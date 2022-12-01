@@ -32,14 +32,21 @@ impl CleanCommand {
 
         try_join_all(git_projects.iter().map(|dir| run_git_fetch_all_prune(dir)))
             .await
-            .context("failed to run step 1: git fetch")?;
+            .context("failed to run git fetch step")?;
 
         Ok(())
     }
 }
 
 async fn find_git_projects(dir: &Path) -> Result<Vec<PathBuf>> {
-    Ok(vec![])
+    /// Find recursively git projects from the given directory.
+    async fn find(dir: &Path) -> Result<Vec<PathBuf>> {
+        Ok(vec![dir.to_path_buf()])
+    }
+
+    // TODO: Check if `dir` is in a git repository.
+
+    find(dir).await
 }
 
 /// - `dir`: The root directory of git repository.
