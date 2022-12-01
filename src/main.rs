@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 use crate::clean::CleanCommand;
 
 mod clean;
+mod util;
 
 #[derive(Debug, Parser)]
 struct Args {

@@ -8,6 +8,8 @@ use clap::Args;
 use futures::{future::try_join_all, try_join};
 use tokio::process::Command;
 
+use crate::util::wrap;
+
 /// Clean unused, old project files.
 ///
 /// 1. This runs `git fetch --all --prune` on all projects. (does not support
@@ -70,49 +72,47 @@ impl CleanCommand {
     }
 
     async fn remove_dead_branches(&self, git_dir: &Path) -> Result<()> {
-        let branches = Command::new("git")
-            .arg("for-each-ref")
-            .arg("--format")
-            .arg("%(refname:short) %(upstream:track)")
-            .current_dir(git_dir)
-            .stderr(Stdio::inherit())
-            .kill_on_drop(true)
-            .output()
-            .await
-            .with_context(|| format!("failed to get git refs from {}", git_dir.display()))?;
+        wrap(async move {
+            let branches = Command::new("git")
+                .arg("for-each-ref")
+                .arg("--format")
+                .arg("%(refname:short) %(upstream:track)")
+                .current_dir(git_dir)
+                .stderr(Stdio::inherit())
+                .kill_on_drop(true)
+                .output()
+                .await
+                .context("failed to get git refs")?;
 
-        let branches = String::from_utf8(branches.stdout)
-            .context("failed to parse output of git refs as utf9")?;
+            let branches = String::from_utf8(branches.stdout)
+                .context("failed to parse output of git refs as utf9")?;
 
-        for line in branches.lines() {
-            let items = line.split_whitespace().collect::<Vec<_>>();
-            if items.len() == 2 && items[1] == "[gone]" {
-                let branch = items[0];
+            for line in branches.lines() {
+                let items = line.split_whitespace().collect::<Vec<_>>();
+                if items.len() == 2 && items[1] == "[gone]" {
+                    let branch = items[0];
 
-                if self.dry_run {
-                    println!("git branch -D {} # {}", branch, git_dir.display());
-                } else {
-                    // TODO: Log status
-                    let _status = Command::new("git")
-                        .arg("branch")
-                        .arg("-D")
-                        .arg(branch)
-                        .current_dir(git_dir)
-                        .kill_on_drop(true)
-                        .status()
-                        .await
-                        .with_context(|| {
-                            format!(
-                                "failed to delete branch {} from {}",
-                                branch,
-                                git_dir.display()
-                            )
-                        })?;
+                    if self.dry_run {
+                        println!("git branch -D {} # {}", branch, git_dir.display());
+                    } else {
+                        // TODO: Log status
+                        let _status = Command::new("git")
+                            .arg("branch")
+                            .arg("-D")
+                            .arg(branch)
+                            .current_dir(git_dir)
+                            .kill_on_drop(true)
+                            .status()
+                            .await
+                            .with_context(|| format!("failed to delete branch {}", branch,))?;
+                    }
                 }
             }
-        }
 
-        Ok(())
+            Ok(())
+        })
+        .await
+        .with_context(|| format!("failed to clean up dead branches in {}", git_dir.display()))
     }
 }
 
