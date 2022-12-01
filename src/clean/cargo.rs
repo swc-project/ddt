@@ -107,7 +107,9 @@ impl CleanCommand {
                         if self.dry_run {
                             println!("rm {} # dry-run: cargo", file.display());
                         } else {
-                            fs::remove_file(file).await?;
+                            fs::remove_file(file).await.with_context(|| {
+                                format!("failed to delete a file at {}", file.display())
+                            })?;
                         }
                     }
 
