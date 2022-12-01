@@ -1,9 +1,8 @@
 use std::{collections::HashMap, path::Path};
 
 use anyhow::{Context, Result};
-use cargo_metadata::{semver::Op, CargoOpt, MetadataCommand};
+use cargo_metadata::{CargoOpt, MetadataCommand};
 use futures::try_join;
-use serde::Deserialize;
 use tokio::fs;
 
 use super::CleanCommand;
@@ -54,9 +53,9 @@ impl CleanCommand {
                 return Ok(());
             }
 
-            let fingerprints = read_cargo_fingerprints(&base_dir.join(".fingerprint")).await?;
+            let deps = read_deps_dir(&base_dir.join(".fingerprint")).await?;
 
-            dbg!(fingerprints);
+            dbg!(deps);
 
             Ok(())
         })
@@ -65,62 +64,44 @@ impl CleanCommand {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Fingerprint {
-    rustc: u64,
-    features: String,
-    target: u64,
-    profile: u64,
-    path: u64,
-    deps: Vec<(u64, String, bool, u64)>,
-
-    local: Vec<LocalData>,
-
-    rustflags: Vec<String>,
-
-    metadata: u64,
-    config: u64,
-    compile_kind: u64,
+/// .d file
+#[derive(Debug)]
+struct DepFile {
+    map: HashMap<String, Vec<String>, ahash::RandomState>,
 }
 
-#[derive(Debug, Deserialize)]
-struct LocalData {
-    #[serde(default, rename = "CheckDepInfo")]
-    check_dep_info: Option<CheckDepInfo>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct CheckDepInfo {
-    dep_info: String,
-}
-
-/// `dir`: `.fingerprint`
-async fn read_cargo_fingerprints(dir: &Path) -> Result<Vec<Fingerprint>> {
+async fn read_deps_dir(dir: &Path) -> Result<Vec<DepFile>> {
     wrap(async move {
         let mut entries = fs::read_dir(dir).await?;
-        let mut fingerprints = vec![];
+        let mut files = vec![];
 
         while let Some(e) = entries.next_entry().await? {
-            let mut files = fs::read_dir(e.path()).await?;
-
-            while let Some(f) = files.next_entry().await? {
-                let path = f.path();
-                if path.extension().map(|s| s == "json").unwrap_or(false) {
-                    let content = fs::read_to_string(&path).await?;
-                    let fingerprint: Fingerprint =
-                        serde_json::from_str(&content).with_context(|| {
-                            format!("failed to parse fingerprint file at {}", path.display())
-                        })?;
-
-                    fingerprints.push(fingerprint);
-                }
+            if e.path().ends_with(".d") {
+                let content = fs::read_to_string(e.path()).await?;
+                let file = parse_dep_file(&content)?;
+                files.push(file);
             }
         }
 
-        Ok(fingerprints)
+        Ok(files)
     })
     .await
-    .with_context(|| format!("failed to read cargo fingerprints at {}", dir.display()))
+    .with_context(|| format!("failed to read cargo deps at {}", dir.display()))
+}
+
+fn parse_dep_file(s: &str) -> Result<DepFile> {
+    let entries = s
+        .lines()
+        .map(|s| s.trim())
+        .filter(|&s| !s.is_empty())
+        .map(|line| line.split_once(':').unwrap())
+        .map(|(k, v)| {
+            (
+                k.to_string(),
+                v.split_whitespace().map(|s| s.to_string()).collect(),
+            )
+        })
+        .collect();
+
+    Ok(DepFile { map: entries })
 }
