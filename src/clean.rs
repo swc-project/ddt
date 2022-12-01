@@ -91,7 +91,7 @@ impl CleanCommand {
                     let branch = items[0];
 
                     if self.dry_run {
-                        println!("git branch -D {} # {}", branch, git_dir.display());
+                        println!("git branch -D {} # dry-run: {}", branch, git_dir.display());
                     } else {
                         // TODO: Log status
                         let _status = Command::new("git")
