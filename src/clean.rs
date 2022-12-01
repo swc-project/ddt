@@ -67,6 +67,7 @@ impl CleanCommand {
         Ok(())
     }
 
+    /// Clean up `target` of cargo
     async fn remove_unused_files(&self, git_dir: &Path) -> Result<()> {
         Ok(())
     }
