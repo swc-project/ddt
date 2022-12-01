@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use cargo_metadata::CargoOpt;
 use clap::Args;
 use futures::{future::try_join_all, try_join};
 use tokio::process::Command;
