@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use clap::Args;
-use futures::future::try_join_all;
+use futures::{future::try_join_all, try_join};
 use tokio::process::Command;
 
 /// Clean unused, old project files.
@@ -41,14 +41,31 @@ impl CleanCommand {
         .await
         .context("failed to run git fetch step")?;
 
-        try_join_all(
-            git_projects
-                .iter()
-                .map(|git_dir| self.remove_dead_branches(git_dir)),
-        )
-        .await
-        .context("failed to clean up dead branches")?;
+        let clean_dead_branches = async {
+            try_join_all(
+                git_projects
+                    .iter()
+                    .map(|git_dir| self.remove_dead_branches(git_dir)),
+            )
+            .await
+            .context("failed to clean up dead branches")
+        };
+        let remove_unused_files = async {
+            try_join_all(
+                git_projects
+                    .iter()
+                    .map(|git_dir| self.remove_unused_files(git_dir)),
+            )
+            .await
+            .context("failed to clean up unused files")
+        };
 
+        try_join!(clean_dead_branches, remove_unused_files).context("failed to clean up")?;
+
+        Ok(())
+    }
+
+    async fn remove_unused_files(&self, git_dir: &Path) -> Result<()> {
         Ok(())
     }
 
