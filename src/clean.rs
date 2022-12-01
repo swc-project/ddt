@@ -62,7 +62,7 @@ impl CleanCommand {
             .kill_on_drop(true)
             .output()
             .await
-            .context("failed to get git refs")?;
+            .with_context(|| format!("failed to get git refs from {}", git_dir.display()))?;
 
         let branches = String::from_utf8(branches.stdout)
             .context("failed to parse output of git refs as utf9")?;
