@@ -11,6 +11,8 @@ use tokio::process::Command;
 
 use crate::util::wrap;
 
+mod cargo;
+
 /// Clean unused, old project files.
 ///
 /// 1. This runs `git fetch --all --prune` on all projects. (does not support
@@ -66,35 +68,6 @@ impl CleanCommand {
         try_join!(clean_dead_branches, remove_unused_files).context("failed to clean up")?;
 
         Ok(())
-    }
-
-    /// Clean up `target` of cargo.
-    ///
-    /// We only remove build outputs for outdated dependencies.
-    async fn remove_unused_files_of_cargo(&self, git_dir: &Path) -> Result<()> {
-        wrap(async move {
-            let metadata = cargo_metadata::MetadataCommand::new()
-                .current_dir(git_dir)
-                .features(CargoOpt::AllFeatures)
-                .exec();
-            // Not a cargo project?
-            // TODO: Log
-            let metadata = match metadata {
-                Ok(metadata) => metadata,
-                Err(_) => return Ok(()),
-            };
-
-            // Calculate current dependencies
-
-            Ok(())
-        })
-        .await
-        .with_context(|| {
-            format!(
-                "failed to clean up cargo target dir at {}",
-                git_dir.display()
-            )
-        })
     }
 
     async fn remove_dead_branches(&self, git_dir: &Path) -> Result<()> {
