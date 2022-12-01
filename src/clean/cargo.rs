@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use anyhow::{Context, Result};
 use cargo_metadata::{CargoOpt, MetadataCommand};
@@ -49,6 +49,7 @@ impl CleanCommand {
     async fn clean_one_target(&self, target_dir: &Path, flavor: &str) -> Result<()> {
         wrap(async move {
             let base_dir = target_dir.join(flavor);
+
             if !base_dir.exists() {
                 return Ok(());
             }
@@ -66,7 +67,28 @@ impl CleanCommand {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Fingerprint {}
+struct Fingerprint {
+    rustc: u128,
+    features: String,
+    target: u128,
+    profile: u128,
+    path: u128,
+    deps: (u128, String, bool, u128),
+
+    local: LocalData,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LocalData {
+    #[serde(rename = "CheckDepInfo")]
+    check_dep_info: CheckDepInfo,
+}
+
+#[derive(Debug, Deserialize)]
+struct CheckDepInfo {
+    dep_info: String,
+}
 
 /// `dir`: `.fingerprint`
 async fn read_cargo_fingerprints(dir: &Path) -> Result<Vec<Fingerprint>> {
@@ -80,8 +102,11 @@ async fn read_cargo_fingerprints(dir: &Path) -> Result<Vec<Fingerprint>> {
             while let Some(f) = files.next_entry().await? {
                 let path = f.path();
                 if path.extension().map(|s| s == "json").unwrap_or(false) {
-                    let content = fs::read_to_string(path).await?;
-                    let fingerprint: Fingerprint = serde_json::from_str(&content)?;
+                    let content = fs::read_to_string(&path).await?;
+                    let fingerprint: Fingerprint =
+                        serde_json::from_str(&content).with_context(|| {
+                            format!("failed to parse fingerprint file at {}", path.display())
+                        })?;
 
                     fingerprints.push(fingerprint);
                 }
