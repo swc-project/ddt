@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use cargo_metadata::{CargoOpt, MetadataCommand};
-use futures::try_join;
+use futures::{future::try_join_all, try_join};
 use tokio::fs;
 
 use super::CleanCommand;
@@ -56,9 +56,33 @@ impl CleanCommand {
                 return Ok(());
             }
 
-            let deps = read_deps_dir(&base_dir.join("deps")).await?;
+            let dep_files = read_deps_dir(&base_dir.join("deps")).await?;
 
-            dbg!(deps);
+            try_join_all(dep_files.iter().map(|dep| {
+                wrap(async move {
+                    for (_, deps) in dep.map.iter() {
+                        // Workspace-local file
+                        if deps.iter().any(|path| path.is_relative()) {
+                            return Ok(());
+                        }
+                    }
+
+                    for (file, _) in dep.map.iter() {
+                        if file.ancestors().all(|dir| dir != target_dir) {
+                            continue;
+                        }
+
+                        if self.dry_run {
+                            println!("cargo: remove {}", file.display());
+                        } else {
+                            fs::remove_file(file).await?;
+                        }
+                    }
+
+                    Ok(())
+                })
+            }))
+            .await?;
 
             Ok(())
         })
