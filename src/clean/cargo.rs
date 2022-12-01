@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::Path};
 
 use anyhow::{Context, Result};
-use cargo_metadata::{CargoOpt, MetadataCommand};
+use cargo_metadata::{semver::Op, CargoOpt, MetadataCommand};
 use futures::try_join;
 use serde::Deserialize;
 use tokio::fs;
@@ -85,10 +85,9 @@ struct Fingerprint {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 struct LocalData {
-    #[serde(rename = "CheckDepInfo")]
-    check_dep_info: CheckDepInfo,
+    #[serde(default, rename = "CheckDepInfo")]
+    check_dep_info: Option<CheckDepInfo>,
 }
 
 #[derive(Debug, Deserialize)]
