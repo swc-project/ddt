@@ -72,6 +72,16 @@ impl CleanCommand {
                             continue;
                         }
 
+                        if let Some(ext) = file.extension() {
+                            if ext == "rlib" || ext == "rmeta" {
+                                // We only delete rlib and rmeta
+                            } else {
+                                continue;
+                            }
+                        } else {
+                            continue;
+                        }
+
                         if self.dry_run {
                             println!("cargo: remove {}", file.display());
                         } else {
