@@ -68,20 +68,20 @@ impl CleanCommand {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Fingerprint {
-    rustc: u128,
+    rustc: u64,
     features: String,
-    target: u128,
-    profile: u128,
-    path: u128,
-    deps: Vec<(u128, String, bool, u128)>,
+    target: u64,
+    profile: u64,
+    path: u64,
+    deps: Vec<(u64, String, bool, u64)>,
 
     local: Vec<LocalData>,
 
     rustflags: Vec<String>,
 
-    metadata: u128,
-    config: u128,
-    compile_kind: u128,
+    metadata: u64,
+    config: u64,
+    compile_kind: u64,
 }
 
 #[derive(Debug, Deserialize)]
