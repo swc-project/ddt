@@ -14,11 +14,9 @@ mod cargo;
 
 /// Clean unused, old project files.
 ///
-/// 1. This runs `git fetch --all` on all projects. (does not support
-/// dry run) 2. This removes
+/// 1. This removes
 ///
 ///  - the unused files in `target` directory.
-///  - local git brach which has a remote branch but it's removed.
 #[derive(Debug, Args)]
 pub(crate) struct CleanCommand {
     #[clap(short, long)]
@@ -29,6 +27,14 @@ pub(crate) struct CleanCommand {
     /// If this is a child of a git repository, this command will run `git fetch
     /// --all` on it and clean only subdirectories.
     dir: PathBuf,
+
+    /// If true, ddt remove local git branches which have a remote branch but
+    /// it's removed.
+    ///
+    /// This runs `git fetch --all` on all projects. (does not support
+    /// dry run)
+    #[clap(long)]
+    remove_dead_git_branches: bool,
 }
 
 impl CleanCommand {
@@ -37,13 +43,15 @@ impl CleanCommand {
             .await
             .with_context(|| format!("failed to find git projects from {}", self.dir.display()))?;
 
-        try_join_all(
-            git_projects
-                .iter()
-                .map(|git_dir| run_git_fetch_all(git_dir)),
-        )
-        .await
-        .context("failed to run git fetch step")?;
+        if self.remove_dead_git_branches {
+            try_join_all(
+                git_projects
+                    .iter()
+                    .map(|git_dir| run_git_fetch_all(git_dir)),
+            )
+            .await
+            .context("failed to run git fetch step")?;
+        }
 
         let clean_dead_branches = async {
             try_join_all(
@@ -70,6 +78,10 @@ impl CleanCommand {
     }
 
     async fn remove_dead_branches(&self, git_dir: &Path) -> Result<()> {
+        if !self.remove_dead_git_branches {
+            return Ok(());
+        }
+
         wrap(async move {
             let branches = Command::new("git")
                 .arg("for-each-ref")
