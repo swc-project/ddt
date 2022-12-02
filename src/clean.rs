@@ -14,7 +14,7 @@ mod cargo;
 
 /// Clean unused, old project files.
 ///
-/// 1. This runs `git fetch --all --prune` on all projects. (does not support
+/// 1. This runs `git fetch --all` on all projects. (does not support
 /// dry run) 2. This removes
 ///
 ///  - the unused files in `target` directory.
@@ -27,7 +27,7 @@ pub(crate) struct CleanCommand {
     /// The directory to clean.
     ///
     /// If this is a child of a git repository, this command will run `git fetch
-    /// --all --prune` on it and clean only subdirectories.
+    /// --all` on it and clean only subdirectories.
     dir: PathBuf,
 }
 
@@ -40,7 +40,7 @@ impl CleanCommand {
         try_join_all(
             git_projects
                 .iter()
-                .map(|git_dir| run_git_fetch_all_prune(git_dir)),
+                .map(|git_dir| run_git_fetch_all(git_dir)),
         )
         .await
         .context("failed to run git fetch step")?;
@@ -126,15 +126,15 @@ async fn find_git_projects(dir: &Path) -> Result<Vec<PathBuf>> {
 }
 
 /// - `dir`: The root directory of git repository.
-async fn run_git_fetch_all_prune(git_dir: &Path) -> Result<()> {
+async fn run_git_fetch_all(git_dir: &Path) -> Result<()> {
     let mut c = Command::new("git");
-    c.arg("fetch").arg("--all").arg("--prune");
+    c.arg("fetch").arg("--all");
     c.kill_on_drop(true);
 
     // TODO: Log status code
     let _status = c.status().await.with_context(|| {
         format!(
-            "failed to get status of `git fetch --all --prune` for {}",
+            "failed to get status of `git fetch --all` for {}",
             git_dir.display()
         )
     })?;
