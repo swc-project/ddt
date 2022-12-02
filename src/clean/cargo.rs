@@ -107,7 +107,7 @@ impl CleanCommand {
                         if self.dry_run {
                             println!("rm {} # dry-run: cargo", file.display());
                         } else {
-                            let _ = fs::remove_file(file);
+                            let _ = fs::remove_file(file).await;
                         }
                     }
 
