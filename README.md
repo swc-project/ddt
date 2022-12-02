@@ -2,6 +2,12 @@
 
 Dudy dev tools.
 
+# Installation
+
+```sh
+cargo install ddt
+```
+
 # Features
 
 - Clean dead git branches.
