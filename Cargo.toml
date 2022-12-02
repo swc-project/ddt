@@ -1,7 +1,11 @@
 [package]
-name = "ddt"
-version = "0.1.0"
+authors = ["강동윤 <kdy1997.dev@gmail.com>"]
+description = "Useful cli tools"
 edition = "2021"
+license = "Apache-2.0"
+name = "ddt"
+repository = "https://github.com/dudykr/ddt.git"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,8 +13,8 @@ edition = "2021"
 ahash = "0.8.2"
 anyhow = "1.0.66"
 cargo_metadata = "0.15.2"
-clap = { version = "4.0.29", features = ["derive"] }
+clap = {version = "4.0.29", features = ["derive"]}
 futures = "0.3.25"
-serde = { version = "1.0.148", features = ["derive"] }
+serde = {version = "1.0.148", features = ["derive"]}
 serde_json = "1.0.89"
-tokio = { version = "1.22.0", features = ["rt", "macros", "rt-multi-thread", "process", "fs"] }
+tokio = {version = "1.22.0", features = ["rt", "macros", "rt-multi-thread", "process", "fs"]}
