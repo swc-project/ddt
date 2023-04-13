@@ -5,7 +5,7 @@ use tempfile::{tempdir, TempDir};
 fn setup_source() -> Result<TempDir> {
     let dir = tempdir()?;
     Command::new("cargo")
-        .args(["new", "--lib", "centre"])
+        .args(["new", "--lib", "primary"])
         .current_dir(&dir)
         .output()?;
     Ok(dir)
