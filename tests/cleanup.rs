@@ -31,5 +31,9 @@ fn add_dep(dir: &Path, dep: &str) -> Result<()> {
 fn cleanup_3_removed_libs() -> Result<()> {
     let testdir = setup_source()?;
 
+    add_dep(testdir.path(), "dep0")?;
+    add_dep(testdir.path(), "dep1")?;
+    add_dep(testdir.path(), "dep2")?;
+
     Ok(())
 }
