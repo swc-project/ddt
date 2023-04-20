@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::fs::File;
+use std::fs::{write, File};
 use std::io::prelude::*;
 use std::path::Path;
 use std::process::Command;
@@ -41,7 +41,7 @@ fn cleanup_3_removed_libs() -> Result<()> {
     let primary_toml_path = testdir.path().join("primary/Cargo.toml");
     let original_cargo_toml = {
         let mut string = String::new();
-        File::open(primary_toml_path)?.read_to_string(&mut string)?;
+        File::open(&primary_toml_path)?.read_to_string(&mut string)?;
         string
     };
 
@@ -53,6 +53,8 @@ fn cleanup_3_removed_libs() -> Result<()> {
         .arg("build")
         .current_dir(testdir.path().join("primary"))
         .output()?;
+
+    write(&primary_toml_path, &original_cargo_toml);
 
     Ok(())
 }
