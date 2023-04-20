@@ -49,5 +49,10 @@ fn cleanup_3_removed_libs() -> Result<()> {
     add_dep(testdir.path(), "dep1")?;
     add_dep(testdir.path(), "dep2")?;
 
+    cargo_invoke()
+        .arg("build")
+        .current_dir(testdir.path().join("primary"))
+        .output()?;
+
     Ok(())
 }
