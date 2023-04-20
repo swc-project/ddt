@@ -16,7 +16,7 @@ fn setup_source() -> Result<TempDir> {
     cargo_invoke()
         .args(["new", "--lib", "primary"])
         .current_dir(&dir)
-        .output()?;
+        .status()?;
     Ok(dir)
 }
 
@@ -25,13 +25,13 @@ fn add_dep(dir: &Path, dep: &str) -> Result<()> {
         .args(["new", "--lib"])
         .arg(&dep)
         .current_dir(&dir)
-        .output()?;
+        .status()?;
     let primary_path = dir.join("primary");
     cargo_invoke()
         .args(["add", "--path"])
         .arg(format!("../{}", dep))
         .current_dir(&primary_path)
-        .output()?;
+        .status()?;
     Ok(())
 }
 
