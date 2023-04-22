@@ -47,7 +47,7 @@ fn build_primary(testdir: &TempDir) -> Result<()> {
     cargo_invoke()
         .arg("build")
         .current_dir(testdir.path().join("primary"))
-        .output()?;
+        .status()?;
     Ok(())
 }
 
