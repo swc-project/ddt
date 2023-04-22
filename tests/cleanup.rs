@@ -54,7 +54,7 @@ fn cleanup_3_removed_libs() -> Result<()> {
         .current_dir(testdir.path().join("primary"))
         .output()?;
 
-    write(&primary_toml_path, &original_cargo_toml);
+    write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
 
     Ok(())
 }
