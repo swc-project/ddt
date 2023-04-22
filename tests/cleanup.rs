@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::fs::{write, File};
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::{tempdir, TempDir};
 
@@ -35,6 +35,14 @@ fn add_dep(dir: &Path, dep: &str) -> Result<()> {
     Ok(())
 }
 
+fn target_dir_glob(testdir: TempDir, file_pattern: &str) -> Result<Vec<PathBuf>> {
+    let mut pattern = testdir.path().join("primary/target/debug/deps/");
+    pattern.push(file_pattern);
+    let pattern = pattern.to_str().expect("file pattern should be utf8");
+
+    Ok(glob::glob(&pattern)?.filter_map(Result::ok).collect())
+}
+
 #[test]
 fn cleanup_3_removed_libs() -> Result<()> {
     let testdir = setup_source()?;
@@ -55,6 +63,8 @@ fn cleanup_3_removed_libs() -> Result<()> {
         .output()?;
 
     write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
+
+    assert_eq!(4, target_dir_glob(testdir, "*.rlib")?.len());
 
     Ok(())
 }
