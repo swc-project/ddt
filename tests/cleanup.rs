@@ -73,7 +73,10 @@ fn cleanup_3_removed_libs() -> Result<()> {
     write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
     build_primary(&testdir)?;
 
-    // Figure out how to run ddt
+    Command::new(env!("CARGO_BIN_EXE_ddt"))
+        .args(["clean", "."])
+        .current_dir(testdir.path().join("primary"))
+        .status()?;
 
     assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len());
     assert_eq!(1, target_dir_glob(&testdir, "*.rmeta")?.len());
