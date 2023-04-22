@@ -67,8 +67,8 @@ fn cleanup_3_removed_libs() -> Result<()> {
 
     build_primary(&testdir)?;
 
-    assert_eq!(4, target_dir_glob(&testdir, "*.rlib")?.len());
-    assert_eq!(4, target_dir_glob(&testdir, "*.rmeta")?.len());
+    assert_eq!(4, target_dir_glob(&testdir, "*.rlib")?.len(), "rlib");
+    assert_eq!(4, target_dir_glob(&testdir, "*.rmeta")?.len(), "rmeta");
 
     write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
     build_primary(&testdir)?;
@@ -78,8 +78,21 @@ fn cleanup_3_removed_libs() -> Result<()> {
         .current_dir(testdir.path().join("primary"))
         .status()?;
 
-    assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len());
-    assert_eq!(1, target_dir_glob(&testdir, "*.rmeta")?.len());
+    assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len(), "rlib");
+    assert_eq!(1, target_dir_glob(&testdir, "*.rmeta")?.len(), "rmeta");
 
+    Ok(())
+}
+
+#[test]
+fn does_not_remove_used_rlib() -> Result<()> {
+    let testdir = setup_source()?;
+    build_primary(&testdir)?;
+    assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len(), "rlib");
+    Command::new(env!("CARGO_BIN_EXE_ddt"))
+        .args(["clean", "."])
+        .current_dir(testdir.path().join("primary"))
+        .status()?;
+    assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len(), "rlib");
     Ok(())
 }
