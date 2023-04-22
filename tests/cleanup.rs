@@ -35,7 +35,7 @@ fn add_dep(dir: &Path, dep: &str) -> Result<()> {
     Ok(())
 }
 
-fn target_dir_glob(testdir: TempDir, file_pattern: &str) -> Result<Vec<PathBuf>> {
+fn target_dir_glob(testdir: &TempDir, file_pattern: &str) -> Result<Vec<PathBuf>> {
     let mut pattern = testdir.path().join("primary/target/debug/deps/");
     pattern.push(file_pattern);
     let pattern = pattern.to_str().expect("file pattern should be utf8");
@@ -62,9 +62,9 @@ fn cleanup_3_removed_libs() -> Result<()> {
         .current_dir(testdir.path().join("primary"))
         .output()?;
 
-    write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
+    assert_eq!(4, target_dir_glob(&testdir, "*.rlib")?.len());
 
-    assert_eq!(4, target_dir_glob(testdir, "*.rlib")?.len());
+    write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
 
     Ok(())
 }
