@@ -43,6 +43,14 @@ fn target_dir_glob(testdir: &TempDir, file_pattern: &str) -> Result<Vec<PathBuf>
     Ok(glob::glob(&pattern)?.filter_map(Result::ok).collect())
 }
 
+fn build_primary(testdir: &TempDir) -> Result<()> {
+    cargo_invoke()
+        .arg("build")
+        .current_dir(testdir.path().join("primary"))
+        .output()?;
+    Ok(())
+}
+
 #[test]
 fn cleanup_3_removed_libs() -> Result<()> {
     let testdir = setup_source()?;
@@ -57,15 +65,15 @@ fn cleanup_3_removed_libs() -> Result<()> {
     add_dep(testdir.path(), "dep1")?;
     add_dep(testdir.path(), "dep2")?;
 
-    cargo_invoke()
-        .arg("build")
-        .current_dir(testdir.path().join("primary"))
-        .output()?;
+    build_primary(&testdir)?;
 
     assert_eq!(4, target_dir_glob(&testdir, "*.rlib")?.len());
     assert_eq!(4, target_dir_glob(&testdir, "*.rmeta")?.len());
 
     write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
+    build_primary(&testdir)?;
+
+    // Figure out how to run ddt
 
     assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len());
     assert_eq!(1, target_dir_glob(&testdir, "*.rmeta")?.len());
