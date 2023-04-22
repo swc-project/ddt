@@ -7,7 +7,7 @@ use tempfile::{tempdir, TempDir};
 
 fn cargo_invoke() -> Command {
     let mut c = Command::new("cargo");
-    c.arg("--offline");
+    c.args(["--offline", "--quiet"]);
     c
 }
 
