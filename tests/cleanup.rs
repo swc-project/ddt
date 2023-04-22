@@ -63,8 +63,12 @@ fn cleanup_3_removed_libs() -> Result<()> {
         .output()?;
 
     assert_eq!(4, target_dir_glob(&testdir, "*.rlib")?.len());
+    assert_eq!(4, target_dir_glob(&testdir, "*.rmeta")?.len());
 
     write(&primary_toml_path, &original_cargo_toml).expect("Could not write to primary Cargo.toml");
+
+    assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len());
+    assert_eq!(1, target_dir_glob(&testdir, "*.rmeta")?.len());
 
     Ok(())
 }
