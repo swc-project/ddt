@@ -93,10 +93,18 @@ fn cleanup_3_removed_libs() -> Result<()> {
 fn does_not_remove_used_rlib() -> Result<()> {
     let testdir = setup_source()?;
     build_primary(&testdir)?;
-    assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len(), "rlib");
+    assert_eq!(
+        1,
+        target_dir_glob(&testdir, "*.rlib")?.len(),
+        "rlib before ddt"
+    );
 
     invoke_program(&testdir)?;
 
-    assert_eq!(1, target_dir_glob(&testdir, "*.rlib")?.len(), "rlib");
+    assert_eq!(
+        1,
+        target_dir_glob(&testdir, "*.rlib")?.len(),
+        "rlib after ddt"
+    );
     Ok(())
 }
