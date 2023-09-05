@@ -1,7 +1,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use cli::ExtraCommand;
 
-use crate::{clean::CleanCommand, cli::solve_version::SolveVersionsCommand};
+use crate::{clean::CleanCommand, cli::SolveVersionsCommand};
 
 mod clean;
 mod cli;
@@ -16,6 +17,7 @@ struct CliArgs {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    X(ExtraCommand),
     Clean(CleanCommand),
     SolveVersions(SolveVersionsCommand),
 }
@@ -30,6 +32,9 @@ async fn main() -> Result<()> {
             cmd.run().await?;
         }
         Command::SolveVersions(cmd) => {
+            cmd.run().await?;
+        }
+        Command::X(cmd) => {
             cmd.run().await?;
         }
     }
