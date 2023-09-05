@@ -1,5 +1,7 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
+
+use crate::util::wrap;
 
 /// Extra commands like auto-completion or self-update.
 #[derive(Debug, Args)]
@@ -10,9 +12,10 @@ pub struct ExtraCommand {
 
 impl ExtraCommand {
     pub async fn run(self) -> Result<()> {
-        //
-
-        Ok(())
+        match self.cmd {
+            Inner::Completion(cmd) => cmd.run().await,
+            Inner::SelfUpdate(cmd) => cmd.run().await,
+        }
     }
 }
 
@@ -26,6 +29,30 @@ enum Inner {
 #[derive(Debug, Args)]
 struct CompletionCommand {}
 
+impl CompletionCommand {
+    pub async fn run(self) -> Result<()> {
+        wrap(async move {
+            // TODO
+
+            Ok(())
+        })
+        .await
+        .context("failed to install auto-completion")
+    }
+}
+
 /// Update to the latest version of the tool.
 #[derive(Debug, Args)]
 struct SelfUpdateCommand {}
+
+impl SelfUpdateCommand {
+    pub async fn run(self) -> Result<()> {
+        wrap(async move {
+            // TODO
+
+            Ok(())
+        })
+        .await
+        .context("failed to self-update")
+    }
+}
