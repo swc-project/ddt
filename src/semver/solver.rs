@@ -10,10 +10,15 @@ pub type PackageName = DefaultAtom;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Constraints {
+    /// Only packages with these names will be considered.
     pub candidate_packages: Vec<PackageName>,
 
+    /// These packages must be included in the solution.
     pub compatible_packages: Vec<PackageConstraint>,
 }
+
+#[derive(Debug, Clone)]
+pub struct Solution {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackageConstraint {
