@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 
 use crate::util::wrap;
@@ -34,7 +34,7 @@ impl CompletionCommand {
         wrap(async move {
             // TODO
 
-            Ok(())
+            bail!("not implemented")
         })
         .await
         .context("failed to install auto-completion")
@@ -50,7 +50,7 @@ impl SelfUpdateCommand {
         wrap(async move {
             // TODO
 
-            Ok(())
+            bail!("not implemented")
         })
         .await
         .context("failed to self-update")
