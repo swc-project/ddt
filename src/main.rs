@@ -1,10 +1,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use cli::ExtraCommand;
 
-use crate::{clean::CleanCommand, cli::SolveVersionsCommand};
+use crate::cli::{CleanCommand, ExtraCommand, SolveVersionsCommand};
 
-mod clean;
 mod cli;
 mod semver;
 mod util;
