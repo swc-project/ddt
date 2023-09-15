@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use auto_impl::auto_impl;
 use gcollections::ops::{Alloc, Bounded, Empty};
 use interval::{ops::Range, IntervalSet};
@@ -15,7 +16,7 @@ use pcp::{
 use semver::{Version, VersionReq};
 use string_cache::DefaultAtom;
 
-#[async_trait::async_trait]
+#[async_trait]
 #[auto_impl(Arc, Box, &)]
 pub trait PackageManager {
     async fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Vec<Version>;
@@ -51,7 +52,7 @@ pub async fn solve(constraints: Arc<Constraints>) -> Result<Solution> {
     }
 
     // TODO: Make this `Arc<dyn>`
-    let pkg_mgr = Arc::<CargoPackageManager>::default();
+    let pkg_mgr = Arc::<CargoPackageManager>::default() as Arc<dyn PackageManager>;
 
     // Search step.
     let mut search = one_solution_engine();
@@ -139,3 +140,8 @@ pub fn nqueens(n: usize) {
 
 #[derive(Debug, Default)]
 struct CargoPackageManager {}
+
+#[async_trait]
+impl PackageManager for CargoPackageManager {
+    async fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Vec<Version> {}
+}
