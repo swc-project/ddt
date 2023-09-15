@@ -1,5 +1,5 @@
 use auto_impl::auto_impl;
-use gcollections::ops::{Alloc, Empty};
+use gcollections::ops::{Alloc, Bounded, Empty};
 use interval::{ops::Range, IntervalSet};
 use pcp::{
     concept::Var,
