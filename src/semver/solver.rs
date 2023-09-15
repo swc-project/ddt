@@ -50,6 +50,9 @@ pub async fn solve(constraints: Arc<Constraints>) -> Result<Solution> {
         answer_packages.push(Box::new(space.vstore.alloc(IntervalSet::new(1, 2))) as Var<VStore>);
     }
 
+    // TODO: Make this `Arc<dyn>`
+    let pkg_mgr = Arc::<CargoPackageManager>::default();
+
     // Search step.
     let mut search = one_solution_engine();
     search.start(&space);
@@ -133,3 +136,6 @@ pub fn nqueens(n: usize) {
         ),
     }
 }
+
+#[derive(Debug, Default)]
+struct CargoPackageManager {}
