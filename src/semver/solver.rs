@@ -1,7 +1,9 @@
+use auto_impl::auto_impl;
 use semver::{Version, VersionReq};
 use string_cache::DefaultAtom;
 
 #[async_trait::async_trait]
+#[auto_impl(Arc, Box, &)]
 pub trait PackageManager {
     async fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Vec<Version>;
 }
