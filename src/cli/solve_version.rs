@@ -10,7 +10,7 @@ impl SolveVersionsCommand {
     pub async fn run(self) -> Result<()> {
         wrap(async move {
             //
-            for i in 3..7 {
+            for i in 1..7 {
                 nqueens(i);
             }
             Ok(())
