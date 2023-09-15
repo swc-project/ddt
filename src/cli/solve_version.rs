@@ -19,11 +19,12 @@ impl SolveVersionsCommand {
                 nqueens(i);
             }
 
+            // TODO: This should be a real data
             let result = solve(Arc::new(Constraints {
                 candidate_packages: vec!["swc_ecma_ast".into(), "swc_common".into()],
                 compatible_packages: vec![PackageConstraint {
                     name: "swc_core".into(),
-                    constraints: "".parse().unwrap(),
+                    constraints: "^0.83.1".parse().unwrap(),
                 }],
             }))
             .await?;
