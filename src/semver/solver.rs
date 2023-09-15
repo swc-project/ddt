@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use anyhow::Result;
 use auto_impl::auto_impl;
 use gcollections::ops::{Alloc, Bounded, Empty};
 use interval::{ops::Range, IntervalSet};
@@ -38,7 +41,17 @@ pub struct PackageConstraint {
     pub constraints: VersionReq,
 }
 
-pub async fn solve() {}
+pub async fn solve(constraints: Arc<Constraints>) -> Result<Solution> {
+    let mut space = FDSpace::empty();
+
+    let mut answer_packages = vec![];
+
+    for wanted in constraints.candidate_packages.iter() {
+        answer_packages.push(Box::new(space.vstore.alloc(IntervalSet::new(1, 2))) as Var<VStore>);
+    }
+
+    Ok(Solution {})
+}
 
 pub fn nqueens(n: usize) {
     let mut space = FDSpace::empty();
