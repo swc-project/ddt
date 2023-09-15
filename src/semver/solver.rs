@@ -59,14 +59,14 @@ pub async fn solve(constraints: Arc<Constraints>) -> Result<Solution> {
     // Print result.
     match status {
         Status::Satisfiable => {
-            print!("{}-queens problem is satisfiable. The first solution is:\n[");
+            print!("The first solution is:\n[");
             for dom in space.vstore.iter() {
                 // At this stage, dom.lower() == dom.upper().
                 print!("{}, ", dom.lower());
             }
             println!("]");
         }
-        Status::Unsatisfiable => println!("{}-queens problem is unsatisfiable."),
+        Status::Unsatisfiable => println!("This is unsatisfiable."),
         Status::EndOfSearch => println!("Search terminated or was interrupted."),
         Status::Unknown(_) => unreachable!(
             "After the search step, the problem instance should be either satisfiable or \
