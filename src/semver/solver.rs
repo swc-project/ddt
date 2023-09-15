@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use auto_impl::auto_impl;
 use semver::{Version, VersionReq};
 use string_cache::DefaultAtom;
+use tokio::sync::RwLock;
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
@@ -69,6 +70,7 @@ pub async fn solve(
     let solver = Solver {
         constraints,
         pkg_mgr,
+        cached_pkgs: Default::default(),
     };
 
     solver.solve().await
@@ -77,9 +79,31 @@ pub async fn solve(
 struct Solver {
     constraints: Arc<Constraints>,
     pkg_mgr: Arc<dyn PackageManager>,
+
+    /// Being lazy is very important here. It will reduce parallelism, but
+    /// reducing network operation is much bigger.
+    cached_pkgs: RwLock<AHashMap<PackageName, Arc<AHashMap<Version, PackageVersion>>>>,
 }
 
 impl Solver {
+    async fn get_pkg(
+        &self,
+        c: &PackageConstraint,
+    ) -> Result<Arc<AHashMap<Version, PackageVersion>>> {
+        if let Some(pkgs) = self.cached_pkgs.read().await.get(&c.n) {
+            return Ok(pkgs.clone());
+        }
+
+        let versions = Arc::new(self.pkg_mgr.resolve(&c.name, &c.constraints).await?);
+
+        self.cached_pkgs
+            .write()
+            .await
+            .insert(c.name.clone(), versions.clone());
+
+        Ok(versions)
+    }
+
     async fn get_all_packkages(
         &self,
     ) -> Result<AHashMap<PackageName, AHashMap<Version, PackageVersion>>> {
