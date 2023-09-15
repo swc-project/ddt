@@ -80,28 +80,31 @@ struct Solver {
 }
 
 impl Solver {
-    async fn solve(&self) -> Result<Solution> {
+    async fn get_all_packkages(
+        &self,
+    ) -> Result<AHashMap<PackageName, AHashMap<Version, PackageVersion>>> {
         let mut all_pkgs: AHashMap<PackageName, AHashMap<Version, PackageVersion>> =
             AHashMap::new();
 
-        for constraint in self.constraints.compatible_packages {
+        for constraint in self.constraints.compatible_packages.iter() {
             let versions = self
                 .pkg_mgr
                 .resolve(&constraint.name, &constraint.constraints)
                 .await?;
 
-            let mut e = all_pkgs.entry(constraint.name.clone()).or_default();
+            let e = all_pkgs.entry(constraint.name.clone()).or_default();
 
             for v in versions {
                 e.insert(v.version.clone(), v);
             }
         }
 
-        // We are interesected only in these packages.
-        for p in self.constraints.candidate_packages.iter() {}
+        Ok(all_pkgs)
+    }
 
-        let mut possible_packages = AHashMap::new();
+    async fn solve(&self) -> Result<Solution> {
+        let all_pkgs = self.get_all_packkages();
 
-        for constraint in self.constraints.compatible_packages {}
+        Ok(Solution {})
     }
 }
