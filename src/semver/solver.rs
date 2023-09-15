@@ -90,11 +90,18 @@ impl Solver {
         &self,
         c: &PackageConstraint,
     ) -> Result<Arc<AHashMap<Version, PackageVersion>>> {
-        if let Some(pkgs) = self.cached_pkgs.read().await.get(&c.n) {
+        if let Some(pkgs) = self.cached_pkgs.read().await.get(&c.name) {
             return Ok(pkgs.clone());
         }
 
-        let versions = Arc::new(self.pkg_mgr.resolve(&c.name, &c.constraints).await?);
+        let versions = self.pkg_mgr.resolve(&c.name, &c.constraints).await?;
+
+        let versions: AHashMap<Version, PackageVersion> = versions
+            .into_iter()
+            .map(|v| (v.version.clone(), v))
+            .collect();
+
+        let versions = Arc::new(versions);
 
         self.cached_pkgs
             .write()
