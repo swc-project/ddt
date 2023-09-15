@@ -25,3 +25,5 @@ pub struct PackageConstraint {
     pub name: PackageName,
     pub constraints: VersionReq,
 }
+
+pub async fn solve() {}
