@@ -81,13 +81,20 @@ struct Solver {
 
 impl Solver {
     async fn solve(&self) -> Result<Solution> {
-        let package_info = AHashMap::new();
+        let mut all_pkgs: AHashMap<PackageName, AHashMap<Version, PackageVersion>> =
+            AHashMap::new();
 
         for constraint in self.constraints.compatible_packages {
             let versions = self
                 .pkg_mgr
                 .resolve(&constraint.name, &constraint.constraints)
                 .await?;
+
+            let mut e = all_pkgs.entry(constraint.name.clone()).or_default();
+
+            for v in versions {
+                e.insert(v.version.clone(), v);
+            }
         }
 
         // We are interesected only in these packages.
