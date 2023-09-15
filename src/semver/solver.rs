@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use ahash::AHashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 use auto_impl::auto_impl;
@@ -9,7 +10,11 @@ use string_cache::DefaultAtom;
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
 pub trait PackageManager {
-    async fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Vec<Version>;
+    async fn resolve(
+        &self,
+        package_name: &str,
+        constraints: &VersionReq,
+    ) -> Result<Vec<PackageVersion>>;
 }
 
 pub type PackageName = DefaultAtom;
@@ -37,7 +42,24 @@ struct CargoPackageManager {}
 
 #[async_trait]
 impl PackageManager for CargoPackageManager {
-    async fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Vec<Version> {}
+    async fn resolve(
+        &self,
+        package_name: &str,
+        constraints: &VersionReq,
+    ) -> Result<Vec<PackageVersion>> {
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PackageVersion {
+    pub version: Version,
+    pub deps: Vec<Dependency>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Dependency {
+    pub version: Version,
+    pub range: VersionReq,
 }
 
 pub async fn solve(
@@ -58,5 +80,21 @@ struct Solver {
 }
 
 impl Solver {
-    async fn solve(&self) -> Result<Solution> {}
+    async fn solve(&self) -> Result<Solution> {
+        let package_info = AHashMap::new();
+
+        for constraint in self.constraints.compatible_packages {
+            let versions = self
+                .pkg_mgr
+                .resolve(&constraint.name, &constraint.constraints)
+                .await?;
+        }
+
+        // We are interesected only in these packages.
+        for p in self.constraints.candidate_packages.iter() {}
+
+        let mut possible_packages = AHashMap::new();
+
+        for constraint in self.constraints.compatible_packages {}
+    }
 }
