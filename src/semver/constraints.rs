@@ -21,9 +21,9 @@ impl ConstraintStorage {
         }
     }
 
-    pub fn new(cur: ConstraintsPerPkg, parent: Arc<ConstraintStorage>) -> Self {
+    pub fn new(parent: Arc<ConstraintStorage>) -> Self {
         Self {
-            cur,
+            cur: Default::default(),
             parent: Some(parent),
         }
     }
@@ -35,6 +35,7 @@ impl ConstraintStorage {
 
 impl ConstraintStorage {
     pub fn insert(&mut self, name: PackageName, constraints: VersionReq) {
+        // TODO: Intersect
         self.cur.insert(name, constraints);
     }
 }

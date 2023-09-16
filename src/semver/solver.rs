@@ -113,8 +113,6 @@ impl Solver {
         parent_constraints: Arc<ConstraintStorage>,
     ) -> Result<()> {
         let pkg_constraints = parent_constraints
-            .read()
-            .await
             .get(&name)
             .cloned()
             .unwrap_or_else(|| panic!("the constraint for package `{}` does not exist", name));
@@ -165,13 +163,13 @@ impl Solver {
         pkg: PackageVersion,
         parent_constraints: Arc<ConstraintStorage>,
     ) -> Result<()> {
-        let mut dep_constraints = ConstraintsPerPkg::default();
+        let mut dep_constraints = ConstraintStorage::new(parent_constraints);
 
         for dep in pkg.deps.iter() {
-            // TODO: Intersect
             dep_constraints.insert(dep.name.clone(), dep.range.clone());
         }
-        let dep_constraints = Arc::new(ConstraintStorage::new(dep_constraints, parent_constraints));
+
+        let dep_constraints = dep_constraints.freeze();
 
         let futures = FuturesUnordered::new();
 
