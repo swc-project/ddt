@@ -173,11 +173,11 @@ impl Solver {
         // them to one per a package.
         let mut merged_constraints = AHashMap::<_, VersionReq>::default();
 
-        for (pkg_name, constraints) in constarints_per_pkg.iter() {
+        for (pkg_name, constraints) in constarints_per_pkg.into_iter() {
             let mut merged = VersionReq::STAR;
 
-            for c in constraints.iter() {
-                merged = intersect_version_req(merged, c.clone());
+            for c in constraints.into_iter() {
+                merged = intersect_version_req(merged, c);
             }
 
             merged_constraints.insert(pkg_name.clone(), merged);
