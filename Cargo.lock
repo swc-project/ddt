@@ -301,6 +301,7 @@ dependencies = [
  "clap",
  "crates-index",
  "futures",
+ "rayon",
  "semver",
  "serde",
  "serde_json",
