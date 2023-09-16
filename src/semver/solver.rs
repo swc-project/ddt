@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use semver::{Version, VersionReq};
@@ -48,6 +48,35 @@ impl PackageManager for CargoPackageManager {
         package_name: &str,
         constraints: &VersionReq,
     ) -> Result<Vec<PackageVersion>> {
+        let index = crates_index::GitIndex::new_cargo_default()?;
+        let pkg = index
+            .crate_(package_name)
+            .ok_or_else(|| anyhow!("Package `{}` not found in index", package_name))?;
+
+        Ok(pkg
+            .versions()
+            .iter()
+            .map(|v| {
+                let ver = v.version().parse().expect("invalid version");
+
+                (ver, v.dependencies().to_vec())
+            })
+            .filter(|(v, _)| constraints.matches(v))
+            .map(|(ver, deps)| {
+                let deps = deps
+                    .iter()
+                    .map(|d| Dependency {
+                        name: d.name().into(),
+                        range: d
+                            .requirement()
+                            .parse()
+                            .expect("invalid version requirenment"),
+                    })
+                    .collect();
+
+                PackageVersion { version: ver, deps }
+            })
+            .collect())
     }
 }
 
@@ -59,7 +88,7 @@ pub struct PackageVersion {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dependency {
-    pub version: Version,
+    pub name: PackageName,
     pub range: VersionReq,
 }
 
