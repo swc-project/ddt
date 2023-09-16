@@ -39,7 +39,7 @@ pub struct PackageConstraint {
 }
 
 #[derive(Debug, Default)]
-struct CargoPackageManager {}
+pub struct CargoPackageManager;
 
 #[async_trait]
 impl PackageManager for CargoPackageManager {
