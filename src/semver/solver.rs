@@ -179,64 +179,30 @@ impl Solver {
             .map(PackageName::from)
             .collect::<Vec<_>>();
 
-        let minimal_constraints = {
-            // Merge all constraints into one, but per package.
-            let mut constarints_per_pkg = AHashMap::<_, Vec<_>>::default();
+        let constraints = {
+            let mut constraints = ConstraintsPerPkg::default();
 
             for constraint in self.constraints.compatible_packages.iter() {
-                let versions = self.get_pkg(constraint).await?;
+                constraints.insert(constraint.name.clone(), constraint.constraints.clone());
+            }
 
-                for v in versions.iter() {
-                    for dep in v.deps.iter() {
-                        let e = constarints_per_pkg.entry(dep.name.clone()).or_default();
+            let mut result = constraints.clone();
+            let constraints = Arc::new(constraints);
 
-                        e.push(dep.range.clone());
-                    }
+            for pkg in self.constraints.compatible_packages.iter() {
+                let full_pkgs = self
+                    .resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
+                    .await?;
+
+                for pkg in full_pkgs.iter() {
+                    result.extend((*pkg.constraints_for_deps).clone());
                 }
             }
 
-            // We now iterate over the merged constraints (again, per package) and combine
-            // them to one per a package.
-            let mut merged_constraints = AHashMap::<_, VersionReq>::default();
-
-            for (pkg_name, constraints) in constarints_per_pkg.into_iter() {
-                let mut merged = VersionReq::STAR;
-
-                for c in constraints.into_iter() {
-                    merged = merged.intersect(c).or_else(|_| {
-                        bail!(
-                            "failed to select a version of {} due to conflicting requirements",
-                            pkg_name
-                        )
-                    })?;
-                }
-
-                merged_constraints.insert(pkg_name.clone(), merged);
-            }
-
-            dbg!(&merged_constraints);
-            Arc::new(merged_constraints)
+            result
         };
 
-        // // Now we have optimal constraints for packages in direct deps of candidates
-        // and // requirements.
-        // {
-        //     let pkgs = self
-        //         .constraints
-        //         .candidate_packages
-        //         .iter()
-        //         .cloned()
-        //         .chain(
-        //             self.constraints
-        //                 .compatible_packages
-        //                 .iter()
-        //                 .map(|v| v.name.clone()),
-        //         )
-        //         .collect::<Vec<_>>();
-
-        //     self.resolve_all_pkgs(Arc::new(pkgs), minimal_constraints.clone())
-        //         .await?;
-        // }
+        dbg!(&constraints);
 
         Ok(Solution {})
     }
