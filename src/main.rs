@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use tracing::info;
 
 use crate::cli::{CleanCommand, ExtraCommand, SolveVersionsCommand};
 
@@ -23,7 +24,15 @@ enum Command {
 #[tokio::main]
 
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_timer(tracing_subscriber::fmt::time::uptime())
+        .with_level(true)
+        .init();
+
     let args = CliArgs::parse();
+
+    info!("Start");
 
     match args.cmd {
         Command::Clean(cmd) => {

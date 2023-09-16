@@ -7,6 +7,7 @@ use auto_impl::auto_impl;
 use semver::{Version, VersionReq};
 use string_cache::DefaultAtom;
 use tokio::sync::RwLock;
+use tracing::{debug, info};
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
@@ -120,6 +121,8 @@ impl Solver {
             return Ok(pkgs.clone());
         }
 
+        debug!("Resolving package `{}`", c.name);
+
         let versions = self.pkg_mgr.resolve(&c.name, &c.constraints).await?;
 
         let versions = Arc::new(versions);
@@ -133,6 +136,8 @@ impl Solver {
     }
 
     async fn solve(&self) -> Result<Solution> {
+        info!("solving versions using Solver");
+
         let ws = cargo_metadata::MetadataCommand::new()
             .exec()
             .context("failed to run `cargo metadata`")?;
@@ -151,6 +156,8 @@ impl Solver {
 
             expanded_constraints.push(pkg.clone());
         }
+
+        dbg!(&expanded_constraints);
 
         Ok(Solution {})
     }
