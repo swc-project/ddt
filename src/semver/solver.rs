@@ -189,6 +189,10 @@ impl Solver {
 
         let futures = futures.collect::<Vec<_>>().await;
 
+        ConstraintStorage::unfreeze(dep_constraints)
+            .remove_parent()
+            .await;
+
         for f in futures {
             f?;
         }
