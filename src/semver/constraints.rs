@@ -27,4 +27,14 @@ impl ConstraintStorage {
             parent: Some(parent),
         }
     }
+
+    pub(crate) fn freeze(self) -> Arc<ConstraintStorage> {
+        Arc::new(self)
+    }
+}
+
+impl ConstraintStorage {
+    pub fn insert(&mut self, name: PackageName, constraints: VersionReq) {
+        self.cur.insert(name, constraints);
+    }
 }

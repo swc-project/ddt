@@ -105,14 +105,14 @@ impl Solver {
         Ok(versions)
     }
 
-    #[tracing::instrument(skip(self, constraints), fields(name = %name))]
+    #[tracing::instrument(skip(self, parent_constraints), fields(name = %name))]
     #[async_recursion]
     async fn resolve_pkg_recursively(
         &self,
         name: PackageName,
-        constraints: Arc<RwLock<ConstraintStorage>>,
+        parent_constraints: Arc<ConstraintStorage>,
     ) -> Result<()> {
-        let pkg_constraints = constraints
+        let pkg_constraints = parent_constraints
             .read()
             .await
             .get(&name)
@@ -140,9 +140,12 @@ impl Solver {
         for pkg in pkg.iter() {
             let name = name.clone();
             let pkg = pkg.clone();
-            let constraints = constraints.clone();
+            let parent_constraints = parent_constraints.clone();
 
-            futures.push(async move { self.resolve_deps(name.clone(), pkg, constraints).await });
+            futures.push(async move {
+                self.resolve_deps(name.clone(), pkg, parent_constraints)
+                    .await
+            });
         }
 
         let futures = futures.collect::<Vec<_>>().await;
@@ -160,7 +163,7 @@ impl Solver {
         &self,
         name: PackageName,
         pkg: PackageVersion,
-        parent_constraints: Arc<ConstraintsPerPkg>,
+        parent_constraints: Arc<ConstraintStorage>,
     ) -> Result<()> {
         let mut dep_constraints = ConstraintsPerPkg::default();
 
@@ -168,10 +171,7 @@ impl Solver {
             // TODO: Intersect
             dep_constraints.insert(dep.name.clone(), dep.range.clone());
         }
-        let dep_constraints = Arc::new(ConstraintStorage {
-            actual: Arc::new(RwLock::new(dep_constraints)),
-            parent: Some(constraints.clone()),
-        });
+        let dep_constraints = Arc::new(ConstraintStorage::new(dep_constraints, parent_constraints));
 
         let futures = FuturesUnordered::new();
 
@@ -202,26 +202,17 @@ impl Solver {
         info!("Solving versions using Solver");
 
         {
-            let mut constraints = ConstraintsPerPkg::default();
+            let mut constraints = ConstraintStorage::root();
 
             for constraint in self.constraints.compatible_packages.iter() {
                 constraints.insert(constraint.name.clone(), constraint.constraints.clone());
             }
 
-            let constraints = Arc::new(ConstraintStorage {
-                actual: Arc::new(RwLock::new(constraints)),
-                parent: None,
-            });
+            let constraints = constraints.freeze();
 
             for pkg in self.constraints.compatible_packages.iter() {
-                self.resolve_pkg_recursively(
-                    pkg.name.clone(),
-                    Arc::new(ConstraintStorage {
-                        actual: Default::default(),
-                        parent: Some(constraints.clone()),
-                    }),
-                )
-                .await?;
+                self.resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
+                    .await?;
             }
         }
 
