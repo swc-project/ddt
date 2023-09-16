@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use clap::Args;
 
 use crate::{
-    semver::solver::{solve, CargoPackageManager, Constraints},
+    semver::solver::{solve, CargoPackageManager, Constraints, PackageConstraint},
     util::wrap,
 };
 
@@ -18,8 +18,15 @@ impl SolveVersionsCommand {
 
             solve(
                 Arc::new(Constraints {
-                    candidate_packages: vec![],
-                    compatible_packages: vec![],
+                    candidate_packages: vec![
+                        "swc_ecma_utils".into(),
+                        "swc_ecma_ast".into(),
+                        "swc_common".into(),
+                    ],
+                    compatible_packages: vec![PackageConstraint {
+                        name: "swc_core".into(),
+                        constraints: "0.83.0".parse().unwrap(),
+                    }],
                 }),
                 Arc::new(CargoPackageManager),
             )
