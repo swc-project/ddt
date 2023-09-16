@@ -201,8 +201,8 @@ impl Solver {
             Arc::new(merged_constraints)
         };
 
-        // Now we have optimal constraints per each package.
-        // We now fetch all
+        // Now we have optimal constraints for packages in direct deps of candidates and
+        // requirements.
         {
             let pkgs = self
                 .constraints
