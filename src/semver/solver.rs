@@ -112,8 +112,6 @@ impl Solver {
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
     ) -> Result<()> {
-        info!("Resolving package `{}` recursively", name);
-
         let pkg_constraints = constraints
             .get(&name)
             .cloned()
@@ -122,6 +120,8 @@ impl Solver {
         if !self.resolution_started.write().await.insert(name.clone()) {
             return Ok(());
         }
+
+        info!("Resolving package `{}` recursively", name);
 
         let pkg = self
             .get_pkg(&PackageConstraint {
