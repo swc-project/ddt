@@ -28,6 +28,7 @@ async fn main() -> Result<()> {
         .with_target(false)
         .with_timer(tracing_subscriber::fmt::time::uptime())
         .with_level(true)
+        .pretty()
         .init();
 
     let args = CliArgs::parse();
