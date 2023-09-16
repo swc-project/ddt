@@ -118,6 +118,10 @@ impl Solver {
             .cloned()
             .unwrap_or_else(|| panic!("the constraint for package `{}` does not exist", name));
 
+        if !self.resolution_started.write().await.insert(name.clone()) {
+            return Ok(());
+        }
+
         let pkg = self
             .get_pkg(&PackageConstraint {
                 name: name.clone(),
@@ -127,10 +131,6 @@ impl Solver {
             .with_context(|| {
                 format!("failed to fetch package data to resolve {name} recursively")
             })?;
-
-        if let Some(res) = self.cache_full_pkg.read().await.get(&pkg).cloned() {
-            return Ok(res);
-        }
 
         for p in pkg.iter() {
             let mut dep_constraints = ConstraintsPerPkg::default();
@@ -162,14 +162,9 @@ impl Solver {
             let futures = futures.collect::<Vec<_>>().await;
 
             for f in futures {
-                let f = f?;
+                f?;
             }
         }
-
-        self.cache_full_pkg
-            .write()
-            .await
-            .insert(pkg.clone(), pkg.clone());
 
         Ok(())
     }
