@@ -102,10 +102,12 @@ impl Solver {
         name: PackageName,
         constraints: Arc<AHashMap<PackageName, VersionReq>>,
     ) -> Result<()> {
-        let constraints = constraints
-            .get(&name)
-            .cloned()
-            .ok_or_else(|| anyhow::anyhow!("constraint for package `{}` does not exist", name))?;
+        let constraints = if let Some(v) = constraints.get(&name).cloned() {
+            v
+        } else {
+            // we are simply resolving, so we can ignore this case.
+            return Ok(());
+        };
 
         let constraint = PackageConstraint { name, constraints };
 
@@ -160,7 +162,7 @@ impl Solver {
             .map(PackageName::from)
             .collect::<Vec<_>>();
 
-        let constraints = {
+        let minimal_constraints = {
             // Merge all constraints into one, but per package.
             let mut constarints_per_pkg = AHashMap::<_, Vec<_>>::default();
 
@@ -201,22 +203,23 @@ impl Solver {
 
         // Now we have optimal constraints per each package.
         // We now fetch all
+        {
+            let pkgs = self
+                .constraints
+                .candidate_packages
+                .iter()
+                .cloned()
+                .chain(
+                    self.constraints
+                        .compatible_packages
+                        .iter()
+                        .map(|v| v.name.clone()),
+                )
+                .collect::<Vec<_>>();
 
-        let pkgs = self
-            .constraints
-            .candidate_packages
-            .iter()
-            .cloned()
-            .chain(
-                self.constraints
-                    .compatible_packages
-                    .iter()
-                    .map(|v| v.name.clone()),
-            )
-            .collect::<Vec<_>>();
-
-        self.resolve_all_pkgs(Arc::new(pkgs), constraints.clone())
-            .await?;
+            self.resolve_all_pkgs(Arc::new(pkgs), minimal_constraints.clone())
+                .await?;
+        }
 
         Ok(Solution {})
     }
