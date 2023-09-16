@@ -114,9 +114,6 @@ impl Solver {
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
     ) -> Result<Vec<Arc<FullPackage>>> {
-        dbg!(&name);
-        dbg!(&constraints);
-
         let pkg_constraints = constraints
             .get(&name)
             .cloned()
@@ -127,7 +124,10 @@ impl Solver {
                 name: name.clone(),
                 constraints: pkg_constraints,
             })
-            .await?;
+            .await
+            .with_context(|| {
+                format!("failed to fetch package data to resolve {name} recursively")
+            })?;
 
         if let Some(res) = self.cache_full_pkg.read().await.get(&pkg).cloned() {
             return Ok(res);
