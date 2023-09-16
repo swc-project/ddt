@@ -185,10 +185,14 @@ impl Solver {
             merged_constraints.insert(pkg_name.clone(), merged);
         }
 
-        dbg!(&constarints_per_pkg);
+        dbg!(&merged_constraints);
 
         Ok(Solution {})
     }
 }
 
-fn intersect_version_req(a: VersionReq, b: VersionReq) -> VersionReq {}
+fn intersect_version_req(a: VersionReq, b: VersionReq) -> VersionReq {
+    VersionReq {
+        comparators: a.comparators.into_iter().chain(b.comparators).collect(),
+    }
+}
