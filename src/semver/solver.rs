@@ -4,6 +4,7 @@ use ahash::AHashMap;
 use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use auto_impl::auto_impl;
+use futures::{stream::FuturesUnordered, StreamExt};
 use semver::{Version, VersionReq};
 use string_cache::DefaultAtom;
 use tokio::sync::RwLock;
@@ -96,14 +97,40 @@ impl Solver {
         Ok(versions)
     }
 
+    async fn resolve_pkg_recursively(
+        &self,
+        name: PackageName,
+        constraints: Arc<AHashMap<PackageName, VersionReq>>,
+    ) -> Result<()> {
+    }
+
     /// Resolve all packages recursively.
     async fn resolve_all_pkgs(
         &self,
-        pkgs: Vec<PackageName>,
+        pkgs: Arc<Vec<PackageName>>,
         constraints: Arc<AHashMap<PackageName, VersionReq>>,
     ) -> Result<()> {
-        wrap(async move {
-            //
+        wrap({
+            let pkgs = pkgs.clone();
+
+            async move {
+                //
+                let futures = FuturesUnordered::new();
+
+                for p in pkgs.iter().cloned() {
+                    let constraints = constraints.clone();
+
+                    futures.push(async move { self.resolve_pkg_recursively(p, constraints).await });
+                }
+
+                let futures = futures.collect::<Vec<_>>().await;
+
+                for f in futures {
+                    f?;
+                }
+
+                Ok(())
+            }
         })
         .await
         .with_context(|| format!("failed to resolve a package in the list `{:?}`", pkgs))
@@ -178,7 +205,8 @@ impl Solver {
             )
             .collect::<Vec<_>>();
 
-        self.resolve_all_pkgs(pkgs, constraints.clone()).await?;
+        self.resolve_all_pkgs(Arc::new(pkgs), constraints.clone())
+            .await?;
 
         Ok(Solution {})
     }
