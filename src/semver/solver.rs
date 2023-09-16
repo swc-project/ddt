@@ -80,6 +80,8 @@ struct Solver {
 /// All versions of a **single** package.
 type Versions = Arc<Vec<PackageVersion>>;
 
+type ConstraintsPerPkg = AHashMap<PackageName, VersionReq>;
+
 impl Solver {
     async fn get_pkg(&self, c: &PackageConstraint) -> Result<Versions> {
         if let Some(pkgs) = self.cached_pkgs.read().await.get(&c.name) {
@@ -104,7 +106,7 @@ impl Solver {
         &self,
         name: PackageName,
         constraints: Arc<AHashMap<PackageName, VersionReq>>,
-    ) -> Result<()> {
+    ) -> Result<(Versions, ConstraintsPerPkg)> {
         let constraints = constraints
             .get(&name)
             .cloned()
