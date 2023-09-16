@@ -102,6 +102,16 @@ impl Solver {
         name: PackageName,
         constraints: Arc<AHashMap<PackageName, VersionReq>>,
     ) -> Result<()> {
+        let constraints = constraints
+            .get(&name)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("constraint for package `{}` does not exist", name))?;
+
+        let constraint = PackageConstraint { name, constraints };
+
+        let pkg = self.get_pkg(&constraint).await?;
+
+        Ok(())
     }
 
     /// Resolve all packages recursively.
