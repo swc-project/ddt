@@ -160,12 +160,10 @@ impl Solver {
         for constraint in self.constraints.compatible_packages.iter() {
             let versions = self.get_pkg(constraint).await?;
 
-            let e = constarints_per_pkg
-                .entry(constraint.name.clone())
-                .or_default();
-
             for v in versions.iter() {
                 for dep in v.deps.iter() {
+                    let e = constarints_per_pkg.entry(dep.name.clone()).or_default();
+
                     e.push(dep.range.clone());
                 }
             }
