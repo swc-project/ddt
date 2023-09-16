@@ -43,18 +43,18 @@ mod semver {
         }
     }
 
-    fn fold_into_comparators(a: Vec<Comparator>, b: Comparator) -> Vec<Comparator> {
-        match a.len() {
-            0 => vec![b],
+    fn fold_into_comparators(to: Vec<Comparator>, new: Comparator) -> Vec<Comparator> {
+        match to.len() {
+            0 => vec![new],
             1 => {
-                let a = a.into_iter().next().unwrap();
-                match a.intersect(b) {
+                let a = to.into_iter().next().unwrap();
+                match a.intersect(new) {
                     Err(None) => Default::default(),
                     Ok(a) => vec![a],
                     Err(Some(a)) => a,
                 }
             }
-            _ => a.into_iter().fold(vec![b], fold_into_comparators),
+            _ => to.into_iter().fold(vec![new], fold_into_comparators),
         }
     }
 
@@ -62,21 +62,12 @@ mod semver {
         type Error = ();
 
         fn intersect(self, other: Self) -> Result<Self, Self::Error> {
-            let a = self
+            let comparators = self
                 .comparators
                 .into_iter()
-                .fold(vec![], fold_into_comparators);
+                .fold(other.comparators, fold_into_comparators);
 
-            let b_res = other
-                .comparators
-                .into_iter()
-                .try_fold(a_fisrt, |a, b| a.intersect(b));
-
-            let b_res = match b_res {
-                Ok(b) => b,
-                Err(None) => return Err(()),
-                Err(Some(b)) => b,
-            };
+            Ok(VersionReq { comparators })
         }
     }
 }
