@@ -14,6 +14,14 @@ impl PackageManager for CargoPackageManager {
         package_name: &str,
         constraints: &VersionReq,
     ) -> Result<Vec<PackageVersion>> {
+        if package_name == "std" || package_name == "core" {
+            return Ok(vec![PackageVersion {
+                name: package_name.into(),
+                version: "1.0.0".parse().unwrap(),
+                deps: Default::default(),
+            }]);
+        }
+
         let index = crates_index::GitIndex::new_cargo_default()?;
         let pkg = index.crate_(package_name).ok_or_else(|| {
             anyhow!(
