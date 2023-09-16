@@ -41,6 +41,12 @@ mod semver {
                 (_, Op::Wildcard) => Ok(self),
                 (Op::Exact, _) => Ok(self),
                 (_, Op::Exact) => Ok(other),
+
+                _ => {
+                    // TODO: Implement more rules
+
+                    Err(Some(vec![self, other]))
+                }
             }
         }
     }
