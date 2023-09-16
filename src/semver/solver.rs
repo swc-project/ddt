@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use semver::{Version, VersionReq};
@@ -141,6 +141,10 @@ impl Solver {
     }
 
     async fn solve(&self) -> Result<Solution> {
+        let interesting_packages = cargo_metadata::MetadataCommand::new()
+            .exec()
+            .context("failed to run `cargo metadata`")?;
+
         Ok(Solution {})
     }
 }
