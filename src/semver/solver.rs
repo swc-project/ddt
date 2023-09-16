@@ -148,10 +148,10 @@ impl Solver {
             for dep in p.deps.iter() {
                 let name = name.clone();
                 let dep_name = dep.name.clone();
-                let constraints = dep_constraints.clone();
+                let dep_constraints = dep_constraints.clone();
 
                 futures.push(async move {
-                    self.resolve_pkg_recursively(dep_name.clone(), constraints)
+                    self.resolve_pkg_recursively(dep_name.clone(), dep_constraints)
                         .await
                         .with_context(|| {
                             format!(
