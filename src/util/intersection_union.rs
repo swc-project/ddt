@@ -26,7 +26,9 @@ mod semver {
     use super::Intersect;
 
     impl Intersect for Comparator {
-        type Error = ();
+        /// - None for incompatible.
+        /// - Some if the result is a vector.
+        type Error = Option<Vec<Self>>;
 
         fn intersect(self, other: Self) -> Result<Self, Self::Error> {
             if self == other {
@@ -34,7 +36,7 @@ mod semver {
             }
 
             match (self.op, other.op) {
-                (Op::Exact, Op::Exact) => Err(()),
+                (Op::Exact, Op::Exact) => Err(None),
                 (Op::Exact, _) => Ok(self),
                 (_, Op::Exact) => Ok(other),
             }
