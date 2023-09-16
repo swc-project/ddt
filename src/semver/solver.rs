@@ -81,7 +81,7 @@ struct Solver {
 
     cached_pkgs: RwLock<AHashMap<PackageName, Versions>>,
 
-    cache_full_pkg: RwLock<AHashMap<Versions, Arc<Vec<FullPackage>>>>,
+    cache_full_pkg: RwLock<AHashMap<Versions, Vec<Arc<FullPackage>>>>,
 }
 
 /// All versions of a **single** package.
@@ -113,7 +113,7 @@ impl Solver {
         &self,
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
-    ) -> Result<Arc<Vec<FullPackage>>> {
+    ) -> Result<Vec<Arc<FullPackage>>> {
         let constraints = constraints
             .get(&name)
             .cloned()
@@ -130,50 +130,37 @@ impl Solver {
         let mut result = vec![];
 
         for p in pkg.iter() {
-            let mut constraits = ConstraintsPerPkg::default();
+            let mut constraints = ConstraintsPerPkg::default();
 
-            p.deps
+            for dep in p.deps.iter() {
+                constraints.insert(p.name.clone(), dep.range.clone());
+            }
+
+            let constraints = Arc::new(constraints);
+
+            let futures = FuturesUnordered::new();
+
+            for dep in p.deps.iter() {
+                let dep_name = dep.name.clone();
+                let constraints = constraints.clone();
+
+                futures
+                    .push(async move { self.resolve_pkg_recursively(dep_name, constraints).await });
+            }
+
+            let futures = futures.collect::<Vec<_>>().await;
+
+            for f in futures {
+                result.extend(f?);
+            }
         }
 
-        let result = Arc::new(result);
         self.cache_full_pkg
             .write()
             .await
             .insert(pkg.clone(), result.clone());
 
         Ok(result)
-    }
-
-    /// Resolve all packages recursively.
-    async fn resolve_all_pkgs(
-        &self,
-        pkgs: Arc<Vec<PackageName>>,
-        constraints: Arc<ConstraintsPerPkg>,
-    ) -> Result<()> {
-        wrap({
-            let pkgs = pkgs.clone();
-
-            async move {
-                //
-                let futures = FuturesUnordered::new();
-
-                for p in pkgs.iter().cloned() {
-                    let constraints = constraints.clone();
-
-                    futures.push(async move { self.resolve_pkg_recursively(p, constraints).await });
-                }
-
-                let futures = futures.collect::<Vec<_>>().await;
-
-                for f in futures {
-                    f?;
-                }
-
-                Ok(())
-            }
-        })
-        .await
-        .with_context(|| format!("failed to resolve a package in the list `{:?}`", pkgs))
     }
 
     async fn solve(&self) -> Result<Solution> {
@@ -229,25 +216,25 @@ impl Solver {
             Arc::new(merged_constraints)
         };
 
-        // Now we have optimal constraints for packages in direct deps of candidates and
-        // requirements.
-        {
-            let pkgs = self
-                .constraints
-                .candidate_packages
-                .iter()
-                .cloned()
-                .chain(
-                    self.constraints
-                        .compatible_packages
-                        .iter()
-                        .map(|v| v.name.clone()),
-                )
-                .collect::<Vec<_>>();
+        // // Now we have optimal constraints for packages in direct deps of candidates
+        // and // requirements.
+        // {
+        //     let pkgs = self
+        //         .constraints
+        //         .candidate_packages
+        //         .iter()
+        //         .cloned()
+        //         .chain(
+        //             self.constraints
+        //                 .compatible_packages
+        //                 .iter()
+        //                 .map(|v| v.name.clone()),
+        //         )
+        //         .collect::<Vec<_>>();
 
-            self.resolve_all_pkgs(Arc::new(pkgs), minimal_constraints.clone())
-                .await?;
-        }
+        //     self.resolve_all_pkgs(Arc::new(pkgs), minimal_constraints.clone())
+        //         .await?;
+        // }
 
         Ok(Solution {})
     }
