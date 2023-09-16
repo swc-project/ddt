@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use semver::{Version, VersionReq};
 use string_cache::DefaultAtom;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
+
+use crate::util::intersection_union::Intersect;
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
@@ -131,7 +133,12 @@ impl Solver {
             let mut merged = VersionReq::STAR;
 
             for c in constraints.into_iter() {
-                merged = intersect_version_req(merged, c);
+                merged = merged.intersect(c).or_else(|_| {
+                    bail!(
+                        "failed to select a version of {} due to conflicting requirements",
+                        pkg_name
+                    )
+                })?;
             }
 
             merged_constraints.insert(pkg_name.clone(), merged);
@@ -140,11 +147,5 @@ impl Solver {
         dbg!(&merged_constraints);
 
         Ok(Solution {})
-    }
-}
-
-fn intersect_version_req(a: VersionReq, b: VersionReq) -> VersionReq {
-    VersionReq {
-        comparators: a.comparators.into_iter().chain(b.comparators).collect(),
     }
 }

@@ -21,7 +21,7 @@ where
 }
 
 mod semver {
-    use semver::{Comparator, Op};
+    use semver::{Comparator, Op, VersionReq};
 
     use super::Intersect;
 
@@ -39,5 +39,11 @@ mod semver {
                 (_, Op::Exact) => Ok(other),
             }
         }
+    }
+
+    impl Intersect for VersionReq {
+        type Error = ();
+
+        fn intersect(self, other: Self) -> Result<Self, Self::Error> {}
     }
 }
