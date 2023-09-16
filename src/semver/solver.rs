@@ -133,8 +133,19 @@ impl Solver {
                 format!("failed to fetch package data to resolve {name} recursively")
             })?;
 
+        let futures = FuturesUnordered::new();
+
         for pkg in pkg.iter() {
-            self.resolve_deps(name.clone(), pkg.clone()).await?;
+            let name = name.clone();
+            let pkg = pkg.clone();
+
+            futures.push(async move { self.resolve_deps(name.clone(), pkg.clone()).await });
+        }
+
+        let futures = futures.collect::<Vec<_>>().await;
+
+        for f in futures {
+            f?;
         }
 
         Ok(())
