@@ -146,14 +146,11 @@ impl Solver {
 
             let futures = FuturesUnordered::new();
 
-            dbg!(&dep_constraints);
-
             for dep in p.deps.iter() {
                 let name = name.clone();
                 let dep_name = dep.name.clone();
                 let dep_constraints = dep_constraints.clone();
 
-                dbg!(&p.name, &dep_name);
                 futures.push(async move {
                     self.resolve_pkg_recursively(dep_name.clone(), dep_constraints)
                         .await
