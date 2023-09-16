@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use auto_impl::auto_impl;
@@ -10,8 +10,6 @@ use semver::{Version, VersionReq};
 use string_cache::DefaultAtom;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
-
-use crate::util::intersection_union::Intersect;
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
@@ -53,7 +51,7 @@ pub struct PackageVersion {
 #[derive(Debug, Clone)]
 pub struct FullPackage {
     pub version: PackageVersion,
-    pub constraints_for_deps: Arc<ConstraintsPerPkg>,
+    pub constraints_for_deps: ConstraintsPerPkg,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -138,6 +136,7 @@ impl Solver {
                 constraints.insert(p.name.clone(), dep.range.clone());
             }
 
+            let all_constraints = constraints.clone();
             let constraints = Arc::new(constraints);
 
             let futures = FuturesUnordered::new();
@@ -153,7 +152,18 @@ impl Solver {
             let futures = futures.collect::<Vec<_>>().await;
 
             for f in futures {
-                result.extend(f?);
+                result.extend(
+                    f?.into_iter()
+                        .map(|f| FullPackage {
+                            version: f.version.clone(),
+                            constraints_for_deps: {
+                                let mut map = all_constraints.clone();
+                                map.extend(f.constraints_for_deps.clone());
+                                map
+                            },
+                        })
+                        .map(Arc::new),
+                );
             }
         }
 
