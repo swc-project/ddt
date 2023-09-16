@@ -7,9 +7,13 @@ use async_trait::async_trait;
 use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
 use semver::{Version, VersionReq};
-use string_cache::DefaultAtom;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
+
+use super::{
+    constraints::{ConstraintStorage, ConstraintsPerPkg},
+    PackageName,
+};
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
@@ -20,8 +24,6 @@ pub trait PackageManager: Send + Sync {
         constraints: &VersionReq,
     ) -> Result<Vec<PackageVersion>>;
 }
-
-pub type PackageName = DefaultAtom;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Constraints {
@@ -56,14 +58,6 @@ pub struct Dependency {
 
 /// All versions of a **single** package.
 type Versions = Arc<Vec<PackageVersion>>;
-
-type ConstraintsPerPkg = AHashMap<PackageName, VersionReq>;
-
-#[derive(Debug)]
-struct ConstraintStorage {
-    actual: Arc<RwLock<ConstraintsPerPkg>>,
-    parent: Option<Arc<ConstraintStorage>>,
-}
 
 pub async fn solve(
     constraints: Arc<Constraints>,
