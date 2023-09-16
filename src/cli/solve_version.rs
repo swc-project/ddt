@@ -28,7 +28,7 @@ impl SolveVersionsCommand {
                     ],
                     compatible_packages: vec![PackageConstraint {
                         name: "swc_core".into(),
-                        constraints: "0.83.0".parse().unwrap(),
+                        constraints: "0.79.0".parse().unwrap(),
                     }],
                 }),
                 Arc::new(CargoPackageManager),
