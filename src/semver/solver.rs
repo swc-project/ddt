@@ -145,7 +145,7 @@ impl Solver {
             .exec()
             .context("failed to run `cargo metadata`")?;
 
-        let interesting_packages = ws
+        let ws_pkg_names = ws
             .workspace_members
             .iter()
             .map(|p| p.to_string())
