@@ -49,6 +49,12 @@ pub struct PackageVersion {
     pub deps: Vec<Dependency>,
 }
 
+#[derive(Debug, Clone)]
+pub struct FullPackage {
+    pub version: PackageVersion,
+    pub constraints_for_deps: Arc<ConstraintsPerPkg>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dependency {
     pub name: PackageName,
@@ -63,6 +69,7 @@ pub async fn solve(
         constraints,
         pkg_mgr,
         cached_pkgs: Default::default(),
+        cache_full_pkg: Default::default(),
     };
 
     solver.solve().await
@@ -72,9 +79,9 @@ struct Solver {
     constraints: Arc<Constraints>,
     pkg_mgr: Arc<dyn PackageManager>,
 
-    /// Being lazy is very important here. It will reduce parallelism, but
-    /// reducing network operation is much bigger.
     cached_pkgs: RwLock<AHashMap<PackageName, Versions>>,
+
+    cache_full_pkg: RwLock<AHashMap<Versions, Arc<ConstraintsPerPkg>>>,
 }
 
 /// All versions of a **single** package.
@@ -106,7 +113,7 @@ impl Solver {
         &self,
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
-    ) -> Result<(Versions, ConstraintsPerPkg)> {
+    ) -> Result<(Versions, Arc<ConstraintsPerPkg>)> {
         let constraints = constraints
             .get(&name)
             .cloned()
@@ -115,6 +122,16 @@ impl Solver {
         let pkg = self
             .get_pkg(&PackageConstraint { name, constraints })
             .await?;
+
+        if let Some(deps) = self.cache_full_pkg.read().await.get(&pkg).cloned() {
+            return Ok((pkg, deps));
+        }
+
+        let mut constraits = ConstraintsPerPkg::default();
+
+        for p in pkg.iter() {
+            p.deps
+        }
 
         Ok((pkg))
     }
