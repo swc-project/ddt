@@ -114,10 +114,13 @@ impl Solver {
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
     ) -> Result<Vec<Arc<FullPackage>>> {
+        dbg!(&name);
+        dbg!(&constraints);
+
         let pkg_constraints = constraints
             .get(&name)
             .cloned()
-            .ok_or_else(|| anyhow!("The constraint for package `{}` does not exist", name))?;
+            .ok_or_else(|| anyhow!("the constraint for package `{}` does not exist", name))?;
 
         let pkg = self
             .get_pkg(&PackageConstraint {
@@ -138,13 +141,14 @@ impl Solver {
             for dep in p.deps.iter() {
                 dep_constraints.insert(p.name.clone(), dep.range.clone());
             }
+            let dep_constraints = Arc::new(dep_constraints);
 
             let futures = FuturesUnordered::new();
 
             for dep in p.deps.iter() {
                 let name = name.clone();
                 let dep_name = dep.name.clone();
-                let constraints = constraints.clone();
+                let constraints = dep_constraints.clone();
 
                 futures.push(async move {
                     self.resolve_pkg_recursively(dep_name.clone(), constraints)
@@ -165,7 +169,7 @@ impl Solver {
                         .map(|f| FullPackage {
                             version: f.version.clone(),
                             constraints_for_deps: {
-                                let mut map = dep_constraints.clone();
+                                let mut map = (*dep_constraints).clone();
                                 map.extend(f.constraints_for_deps.clone());
                                 map
                             },
