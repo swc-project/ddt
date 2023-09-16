@@ -15,9 +15,13 @@ impl PackageManager for CargoPackageManager {
         constraints: &VersionReq,
     ) -> Result<Vec<PackageVersion>> {
         let index = crates_index::GitIndex::new_cargo_default()?;
-        let pkg = index
-            .crate_(package_name)
-            .ok_or_else(|| anyhow!("Package `{}` not found in index", package_name))?;
+        let pkg = index.crate_(package_name).ok_or_else(|| {
+            anyhow!(
+                "Package `{}@{}` not found in index",
+                package_name,
+                constraints
+            )
+        })?;
 
         Ok(pkg
             .versions()
