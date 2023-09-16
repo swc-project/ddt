@@ -102,12 +102,10 @@ impl Solver {
         name: PackageName,
         constraints: Arc<AHashMap<PackageName, VersionReq>>,
     ) -> Result<()> {
-        let constraints = if let Some(v) = constraints.get(&name).cloned() {
-            v
-        } else {
-            // we are simply resolving, so we can ignore this case.
-            return Ok(());
-        };
+        let constraints = constraints
+            .get(&name)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("constraint for package `{}` does not exist", name))?;
 
         let constraint = PackageConstraint { name, constraints };
 
