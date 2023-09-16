@@ -141,9 +141,16 @@ impl Solver {
     }
 
     async fn solve(&self) -> Result<Solution> {
-        let interesting_packages = cargo_metadata::MetadataCommand::new()
+        let ws = cargo_metadata::MetadataCommand::new()
             .exec()
             .context("failed to run `cargo metadata`")?;
+
+        let interesting_packages = ws
+            .workspace_members
+            .iter()
+            .map(|p| p.to_string())
+            .map(PackageName::from)
+            .collect::<Vec<_>>();
 
         Ok(Solution {})
     }
