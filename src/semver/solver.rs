@@ -228,6 +228,16 @@ impl Solver {
             .iter()
             .map(|p| p.to_string())
             .map(PackageName::from)
-            .collect::<Vec<_>>();
+            .collect::<AHashSet<_>>();
+
+        let ws_pkgs = ws
+            .packages
+            .iter()
+            .filter(|pkg| ws_pkg_names.contains(&pkg.name.clone().into()));
+
+        Ok(ws_pkgs
+            .flat_map(|pkg| pkg.dependencies.iter().map(|d| d.name.clone()))
+            .map(PackageName::from)
+            .collect())
     }
 }
