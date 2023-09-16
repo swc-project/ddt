@@ -34,6 +34,12 @@ impl ConstraintStorage {
 }
 
 impl ConstraintStorage {
+    pub fn get(&self, name: &PackageName) -> Option<&VersionReq> {
+        self.cur
+            .get(name)
+            .or_else(|| self.parent.as_ref().and_then(|p| p.get(name)))
+    }
+
     pub fn insert(&mut self, name: PackageName, constraints: VersionReq) {
         // TODO: Intersect
         self.cur.insert(name, constraints);
