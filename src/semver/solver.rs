@@ -73,7 +73,7 @@ struct Solver {
     constraints: Arc<Constraints>,
     pkg_mgr: Arc<dyn PackageManager>,
 
-    cached_pkgs: RwLock<AHashMap<PackageName, Versions>>,
+    cached_pkgs: RwLock<AHashMap<PackageConstraint, Versions>>,
 
     /// Used to prevent infinite recursion of `resolve_pkg_recursively`.
     resolution_started: RwLock<AHashSet<PackageName>>,
@@ -87,7 +87,7 @@ type ConstraintsPerPkg = AHashMap<PackageName, VersionReq>;
 
 impl Solver {
     async fn get_pkg(&self, c: &PackageConstraint) -> Result<Versions> {
-        if let Some(pkgs) = self.cached_pkgs.read().await.get(&c.name) {
+        if let Some(pkgs) = self.cached_pkgs.read().await.get(c) {
             return Ok(pkgs.clone());
         }
 
@@ -100,7 +100,7 @@ impl Solver {
         self.cached_pkgs
             .write()
             .await
-            .insert(c.name.clone(), versions.clone());
+            .insert(c.clone(), versions.clone());
 
         Ok(versions)
     }
