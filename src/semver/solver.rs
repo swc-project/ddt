@@ -120,7 +120,10 @@ impl Solver {
             .ok_or_else(|| anyhow!("The constraint for package `{}` does not exist", name))?;
 
         let pkg = self
-            .get_pkg(&PackageConstraint { name, constraints })
+            .get_pkg(&PackageConstraint {
+                name: name.clone(),
+                constraints,
+            })
             .await?;
 
         if let Some(res) = self.cache_full_pkg.read().await.get(&pkg).cloned() {
@@ -142,11 +145,19 @@ impl Solver {
             let futures = FuturesUnordered::new();
 
             for dep in p.deps.iter() {
+                let name = name.clone();
                 let dep_name = dep.name.clone();
                 let constraints = constraints.clone();
 
-                futures
-                    .push(async move { self.resolve_pkg_recursively(dep_name, constraints).await });
+                futures.push(async move {
+                    self.resolve_pkg_recursively(dep_name.clone(), constraints)
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "failed to resolve a dependency package `{dep_name}` of `{name}`"
+                            )
+                        })
+                });
             }
 
             let futures = futures.collect::<Vec<_>>().await;
