@@ -75,7 +75,11 @@ impl PackageManager for CargoPackageManager {
                     })
                     .collect();
 
-                PackageVersion { version: ver, deps }
+                PackageVersion {
+                    name: package_name.into(),
+                    version: ver,
+                    deps,
+                }
             })
             .collect())
     }
@@ -83,6 +87,7 @@ impl PackageManager for CargoPackageManager {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackageVersion {
+    pub name: PackageName,
     pub version: Version,
     pub deps: Vec<Dependency>,
 }
@@ -149,15 +154,27 @@ impl Solver {
             .map(PackageName::from)
             .collect::<Vec<_>>();
 
-        let mut expanded_constraints = vec![];
+        // Merge all constraints into one, but per package.
+        let mut merged_constarints = AHashMap::<_, Vec<_>>::default();
 
         for constraint in self.constraints.compatible_packages.iter() {
-            let pkg = self.get_pkg(constraint).await?;
+            let versions = self.get_pkg(constraint).await?;
 
-            expanded_constraints.push(pkg.clone());
+            let e = merged_constarints
+                .entry(constraint.name.clone())
+                .or_default();
+
+            for v in versions.iter() {
+                for dep in v.deps.iter() {
+                    e.push(dep.range.clone());
+                }
+            }
         }
 
-        dbg!(&expanded_constraints);
+        // We now iterate over the merged constraints (again, per package) and combine
+        // them to one per a package.
+
+        dbg!(&merged_constarints);
 
         Ok(Solution {})
     }
