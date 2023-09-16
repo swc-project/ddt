@@ -62,7 +62,7 @@ type ConstraintsPerPkg = AHashMap<PackageName, VersionReq>;
 #[derive(Debug)]
 struct ConstraintStorage {
     actual: Arc<RwLock<ConstraintsPerPkg>>,
-    parent: Arc<ConstraintStorage>,
+    parent: Option<Arc<ConstraintStorage>>,
 }
 
 pub async fn solve(
@@ -120,6 +120,8 @@ impl Solver {
     ) -> Result<()> {
         let pkg_constraints = constraints
             .parent
+            .as_deref()
+            .unwrap()
             .actual
             .read()
             .await
@@ -148,18 +150,9 @@ impl Solver {
         for pkg in pkg.iter() {
             let name = name.clone();
             let pkg = pkg.clone();
+            let constraints = constraints.clone();
 
-            futures.push(async move {
-                self.resolve_deps(
-                    name.clone(),
-                    pkg.clone(),
-                    Arc::new(ConstraintStorage {
-                        actual: (),
-                        parent: constraints.clone(),
-                    }),
-                )
-                .await
-            });
+            futures.push(async move { self.resolve_deps(name.clone(), pkg, constraints).await });
         }
 
         let futures = futures.collect::<Vec<_>>().await;
@@ -185,7 +178,10 @@ impl Solver {
             // TODO: Intersect
             dep_constraints.insert(dep.name.clone(), dep.range.clone());
         }
-        let dep_constraints = Arc::new(dep_constraints);
+        let dep_constraints = Arc::new(ConstraintStorage {
+            actual: Arc::new(RwLock::new(dep_constraints)),
+            parent: Some(constraints.clone()),
+        });
 
         let futures = FuturesUnordered::new();
 
@@ -195,15 +191,11 @@ impl Solver {
             let dep_constraints = dep_constraints.clone();
 
             futures.push(async move {
-                self.resolve_pkg_recursively(
-                    dep_name.clone(),
-                    dep_constraints,
-                    constraint_storage.clone(),
-                )
-                .await
-                .with_context(|| {
-                    format!("failed to resolve a dependency package `{dep_name}` of `{name}`")
-                })
+                self.resolve_pkg_recursively(dep_name.clone(), dep_constraints)
+                    .await
+                    .with_context(|| {
+                        format!("failed to resolve a dependency package `{dep_name}` of `{name}`")
+                    })
             });
         }
 
@@ -226,11 +218,20 @@ impl Solver {
                 constraints.insert(constraint.name.clone(), constraint.constraints.clone());
             }
 
-            let constraints = Arc::new(constraints);
+            let constraints = Arc::new(ConstraintStorage {
+                actual: Arc::new(RwLock::new(constraints)),
+                parent: None,
+            });
 
             for pkg in self.constraints.compatible_packages.iter() {
-                self.resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
-                    .await?;
+                self.resolve_pkg_recursively(
+                    pkg.name.clone(),
+                    Arc::new(ConstraintStorage {
+                        actual: Default::default(),
+                        parent: Some(constraints.clone()),
+                    }),
+                )
+                .await?;
             }
         }
 
