@@ -62,7 +62,6 @@ pub async fn solve(
         constraints,
         pkg_mgr,
         cached_pkgs: Default::default(),
-        cache_full_pkg: Default::default(),
         constraints_for_deps: Default::default(),
         resolution_started: Default::default(),
     };
@@ -75,8 +74,6 @@ struct Solver {
     pkg_mgr: Arc<dyn PackageManager>,
 
     cached_pkgs: RwLock<AHashMap<PackageName, Versions>>,
-
-    cache_full_pkg: RwLock<AHashMap<Versions, Vec<Arc<PackageVersion>>>>,
 
     /// Used to prevent infinite recursion of `resolve_pkg_recursively`.
     resolution_started: RwLock<AHashSet<PackageName>>,
@@ -113,7 +110,7 @@ impl Solver {
         &self,
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
-    ) -> Result<Vec<Arc<PackageVersion>>> {
+    ) -> Result<()> {
         info!("Resolving package `{}` recursively", name);
 
         let pkg_constraints = constraints
@@ -134,8 +131,6 @@ impl Solver {
         if let Some(res) = self.cache_full_pkg.read().await.get(&pkg).cloned() {
             return Ok(res);
         }
-
-        let mut result = vec![];
 
         for p in pkg.iter() {
             let mut dep_constraints = ConstraintsPerPkg::default();
@@ -168,17 +163,15 @@ impl Solver {
 
             for f in futures {
                 let f = f?;
-
-                result.extend(f);
             }
         }
 
         self.cache_full_pkg
             .write()
             .await
-            .insert(pkg.clone(), result.clone());
+            .insert(pkg.clone(), pkg.clone());
 
-        Ok(result)
+        Ok(())
     }
 
     async fn solve(&self) -> Result<Solution> {
