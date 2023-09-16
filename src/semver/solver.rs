@@ -110,13 +110,9 @@ impl Solver {
     async fn resolve_pkg_recursively(
         &self,
         name: PackageName,
-        constraints: Arc<ConstraintStorage>,
+        constraints: Arc<RwLock<ConstraintStorage>>,
     ) -> Result<()> {
         let pkg_constraints = constraints
-            .parent
-            .as_deref()
-            .unwrap()
-            .actual
             .read()
             .await
             .get(&name)
@@ -164,7 +160,7 @@ impl Solver {
         &self,
         name: PackageName,
         pkg: PackageVersion,
-        constraints: Arc<ConstraintStorage>,
+        parent_constraints: Arc<ConstraintsPerPkg>,
     ) -> Result<()> {
         let mut dep_constraints = ConstraintsPerPkg::default();
 
