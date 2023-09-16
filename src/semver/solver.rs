@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
@@ -105,25 +105,25 @@ impl Solver {
     async fn resolve_pkg_recursively(
         &self,
         name: PackageName,
-        constraints: Arc<AHashMap<PackageName, VersionReq>>,
+        constraints: Arc<ConstraintsPerPkg>,
     ) -> Result<(Versions, ConstraintsPerPkg)> {
         let constraints = constraints
             .get(&name)
             .cloned()
-            .ok_or_else(|| anyhow::anyhow!("constraint for package `{}` does not exist", name))?;
+            .ok_or_else(|| anyhow!("The constraint for package `{}` does not exist", name))?;
 
-        let constraint = PackageConstraint { name, constraints };
+        let pkg = self
+            .get_pkg(&PackageConstraint { name, constraints })
+            .await?;
 
-        let pkg = self.get_pkg(&constraint).await?;
-
-        Ok(())
+        Ok((pkg))
     }
 
     /// Resolve all packages recursively.
     async fn resolve_all_pkgs(
         &self,
         pkgs: Arc<Vec<PackageName>>,
-        constraints: Arc<AHashMap<PackageName, VersionReq>>,
+        constraints: Arc<ConstraintsPerPkg>,
     ) -> Result<()> {
         wrap({
             let pkgs = pkgs.clone();
