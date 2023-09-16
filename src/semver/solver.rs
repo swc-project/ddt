@@ -141,7 +141,7 @@ impl Solver {
     }
 
     async fn solve(&self) -> Result<Solution> {
-        info!("solving versions using Solver");
+        info!("Solving versions using Solver");
 
         let ws = cargo_metadata::MetadataCommand::new()
             .exec()
