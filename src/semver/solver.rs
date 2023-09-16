@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use ahash::AHashMap;
 use anyhow::{anyhow, bail, Context, Result};
+use async_recursion::async_recursion;
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
@@ -10,11 +11,11 @@ use string_cache::DefaultAtom;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use crate::util::{intersection_union::Intersect, wrap};
+use crate::util::intersection_union::Intersect;
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
-pub trait PackageManager {
+pub trait PackageManager: Send + Sync {
     async fn resolve(
         &self,
         package_name: &str,
@@ -109,6 +110,7 @@ impl Solver {
         Ok(versions)
     }
 
+    #[async_recursion]
     async fn resolve_pkg_recursively(
         &self,
         name: PackageName,
