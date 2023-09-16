@@ -190,17 +190,6 @@ impl Solver {
     async fn solve(&self) -> Result<Solution> {
         info!("Solving versions using Solver");
 
-        let ws = cargo_metadata::MetadataCommand::new()
-            .exec()
-            .context("failed to run `cargo metadata`")?;
-
-        let ws_pkg_names = ws
-            .workspace_members
-            .iter()
-            .map(|p| p.to_string())
-            .map(PackageName::from)
-            .collect::<Vec<_>>();
-
         {
             let mut constraints = ConstraintsPerPkg::default();
 
@@ -214,10 +203,31 @@ impl Solver {
                 self.resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
                     .await?;
             }
-        };
+        }
 
         dbg!(&self.constraints_for_deps.read().await);
 
+        let interesing_pkgs = if !self.constraints.candidate_packages.is_empty() {
+            self.constraints.candidate_packages.clone()
+        } else {
+            self.get_direct_deps_of_current_cargo_workspace()?
+        };
+
+        dbg!(&interesing_pkgs);
+
         Ok(Solution {})
+    }
+
+    fn get_direct_deps_of_current_cargo_workspace(&self) -> Result<Vec<PackageName>> {
+        let ws = cargo_metadata::MetadataCommand::new()
+            .exec()
+            .context("failed to run `cargo metadata`")?;
+
+        let ws_pkg_names = ws
+            .workspace_members
+            .iter()
+            .map(|p| p.to_string())
+            .map(PackageName::from)
+            .collect::<Vec<_>>();
     }
 }
