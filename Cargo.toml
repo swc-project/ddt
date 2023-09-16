@@ -12,6 +12,7 @@ version = "0.1.2"
 [dependencies]
 ahash = "0.8.0"
 anyhow = "1.0.0"
+async-recursion = "1.0.5"
 async-trait = "0.1.73"
 auto_impl = "1.1.0"
 cargo_metadata = "0.15.2"
