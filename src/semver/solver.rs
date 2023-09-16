@@ -133,38 +133,44 @@ impl Solver {
                 format!("failed to fetch package data to resolve {name} recursively")
             })?;
 
-        for p in pkg.iter() {
-            let mut dep_constraints = ConstraintsPerPkg::default();
+        for pkg in pkg.iter() {
+            self.resolve_deps(name.clone(), pkg.clone()).await?;
+        }
 
-            for dep in p.deps.iter() {
-                // TODO: Intersect
-                dep_constraints.insert(dep.name.clone(), dep.range.clone());
-            }
-            let dep_constraints = Arc::new(dep_constraints);
+        Ok(())
+    }
 
-            let futures = FuturesUnordered::new();
+    #[tracing::instrument(skip_all)]
+    #[async_recursion]
+    async fn resolve_deps(&self, name: PackageName, pkg: PackageVersion) -> Result<()> {
+        let mut dep_constraints = ConstraintsPerPkg::default();
 
-            for dep in p.deps.iter() {
-                let name = name.clone();
-                let dep_name = dep.name.clone();
-                let dep_constraints = dep_constraints.clone();
+        for dep in pkg.deps.iter() {
+            // TODO: Intersect
+            dep_constraints.insert(dep.name.clone(), dep.range.clone());
+        }
+        let dep_constraints = Arc::new(dep_constraints);
 
-                futures.push(async move {
-                    self.resolve_pkg_recursively(dep_name.clone(), dep_constraints)
-                        .await
-                        .with_context(|| {
-                            format!(
-                                "failed to resolve a dependency package `{dep_name}` of `{name}`"
-                            )
-                        })
-                });
-            }
+        let futures = FuturesUnordered::new();
 
-            let futures = futures.collect::<Vec<_>>().await;
+        for dep in pkg.deps.iter() {
+            let name = name.clone();
+            let dep_name = dep.name.clone();
+            let dep_constraints = dep_constraints.clone();
 
-            for f in futures {
-                f?;
-            }
+            futures.push(async move {
+                self.resolve_pkg_recursively(dep_name.clone(), dep_constraints)
+                    .await
+                    .with_context(|| {
+                        format!("failed to resolve a dependency package `{dep_name}` of `{name}`")
+                    })
+            });
+        }
+
+        let futures = futures.collect::<Vec<_>>().await;
+
+        for f in futures {
+            f?;
         }
 
         Ok(())
