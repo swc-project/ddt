@@ -81,7 +81,7 @@ struct Solver {
 
     cached_pkgs: RwLock<AHashMap<PackageName, Versions>>,
 
-    cache_full_pkg: RwLock<AHashMap<Versions, Arc<ConstraintsPerPkg>>>,
+    cache_full_pkg: RwLock<AHashMap<Versions, Arc<Vec<FullPackage>>>>,
 }
 
 /// All versions of a **single** package.
@@ -113,7 +113,7 @@ impl Solver {
         &self,
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
-    ) -> Result<(Versions, Arc<ConstraintsPerPkg>)> {
+    ) -> Result<Arc<Vec<FullPackage>>> {
         let constraints = constraints
             .get(&name)
             .cloned()
@@ -123,17 +123,25 @@ impl Solver {
             .get_pkg(&PackageConstraint { name, constraints })
             .await?;
 
-        if let Some(deps) = self.cache_full_pkg.read().await.get(&pkg).cloned() {
-            return Ok((pkg, deps));
+        if let Some(res) = self.cache_full_pkg.read().await.get(&pkg).cloned() {
+            return Ok(res);
         }
 
-        let mut constraits = ConstraintsPerPkg::default();
+        let mut result = vec![];
 
         for p in pkg.iter() {
+            let mut constraits = ConstraintsPerPkg::default();
+
             p.deps
         }
 
-        Ok((pkg))
+        let result = Arc::new(result);
+        self.cache_full_pkg
+            .write()
+            .await
+            .insert(pkg.clone(), result.clone());
+
+        Ok(result)
     }
 
     /// Resolve all packages recursively.
