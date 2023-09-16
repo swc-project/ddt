@@ -44,7 +44,7 @@ impl PackageManager for CargoPackageManager {
                 let deps = deps
                     .iter()
                     .map(|d| Dependency {
-                        name: d.name().into(),
+                        name: d.crate_name().into(),
                         range: d
                             .requirement()
                             .parse()
