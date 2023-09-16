@@ -10,10 +10,7 @@ use semver::{Version, VersionReq};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use super::{
-    constraints::{ConstraintStorage, ConstraintsPerPkg},
-    PackageName,
-};
+use super::{constraints::ConstraintStorage, PackageName};
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
@@ -67,7 +64,6 @@ pub async fn solve(
         constraints,
         pkg_mgr,
         cached_pkgs: Default::default(),
-        constraints_for_deps: Default::default(),
         resolution_started: Default::default(),
     };
 
@@ -82,7 +78,6 @@ struct Solver {
 
     /// Used to prevent infinite recursion of `resolve_pkg_recursively`.
     resolution_started: RwLock<AHashSet<PackageName>>,
-    constraints_for_deps: RwLock<AHashMap<PackageVersion, ConstraintsPerPkg>>,
 }
 
 impl Solver {
@@ -203,7 +198,7 @@ impl Solver {
     async fn solve(&self) -> Result<Solution> {
         info!("Solving versions using Solver");
 
-        {
+        let constraints = {
             let mut constraints = ConstraintStorage::root();
 
             for constraint in self.constraints.compatible_packages.iter() {
@@ -216,9 +211,11 @@ impl Solver {
                 self.resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
                     .await?;
             }
-        }
 
-        dbg!(&self.constraints_for_deps.read().await);
+            ConstraintStorage::unfreeze(constraints)
+        };
+
+        dbg!(&constraints);
 
         let interesing_pkgs = if !self.constraints.candidate_packages.is_empty() {
             self.constraints.candidate_packages.clone()
