@@ -37,6 +37,8 @@ mod semver {
 
             match (self.op, other.op) {
                 (Op::Exact, Op::Exact) => Err(None),
+                (Op::Wildcard, _) => Ok(other),
+                (_, Op::Wildcard) => Ok(self),
                 (Op::Exact, _) => Ok(self),
                 (_, Op::Exact) => Ok(other),
             }
