@@ -54,6 +54,17 @@ pub struct Dependency {
     pub range: VersionReq,
 }
 
+/// All versions of a **single** package.
+type Versions = Arc<Vec<PackageVersion>>;
+
+type ConstraintsPerPkg = AHashMap<PackageName, VersionReq>;
+
+#[derive(Debug)]
+struct ConstraintStorage {
+    actual: Arc<RwLock<ConstraintsPerPkg>>,
+    parent: Arc<ConstraintStorage>,
+}
+
 pub async fn solve(
     constraints: Arc<Constraints>,
     pkg_mgr: Arc<dyn PackageManager>,
@@ -80,11 +91,6 @@ struct Solver {
     constraints_for_deps: RwLock<AHashMap<PackageVersion, ConstraintsPerPkg>>,
 }
 
-/// All versions of a **single** package.
-type Versions = Arc<Vec<PackageVersion>>;
-
-type ConstraintsPerPkg = AHashMap<PackageName, VersionReq>;
-
 impl Solver {
     async fn get_pkg(&self, c: &PackageConstraint) -> Result<Versions> {
         if let Some(pkgs) = self.cached_pkgs.read().await.get(c) {
@@ -110,9 +116,13 @@ impl Solver {
     async fn resolve_pkg_recursively(
         &self,
         name: PackageName,
-        constraints: Arc<ConstraintsPerPkg>,
+        constraints: Arc<ConstraintStorage>,
     ) -> Result<()> {
         let pkg_constraints = constraints
+            .parent
+            .actual
+            .read()
+            .await
             .get(&name)
             .cloned()
             .unwrap_or_else(|| panic!("the constraint for package `{}` does not exist", name));
@@ -139,7 +149,17 @@ impl Solver {
             let name = name.clone();
             let pkg = pkg.clone();
 
-            futures.push(async move { self.resolve_deps(name.clone(), pkg.clone()).await });
+            futures.push(async move {
+                self.resolve_deps(
+                    name.clone(),
+                    pkg.clone(),
+                    Arc::new(ConstraintStorage {
+                        actual: (),
+                        parent: constraints.clone(),
+                    }),
+                )
+                .await
+            });
         }
 
         let futures = futures.collect::<Vec<_>>().await;
@@ -153,7 +173,12 @@ impl Solver {
 
     #[tracing::instrument(skip_all)]
     #[async_recursion]
-    async fn resolve_deps(&self, name: PackageName, pkg: PackageVersion) -> Result<()> {
+    async fn resolve_deps(
+        &self,
+        name: PackageName,
+        pkg: PackageVersion,
+        constraints: Arc<ConstraintStorage>,
+    ) -> Result<()> {
         let mut dep_constraints = ConstraintsPerPkg::default();
 
         for dep in pkg.deps.iter() {
@@ -170,11 +195,15 @@ impl Solver {
             let dep_constraints = dep_constraints.clone();
 
             futures.push(async move {
-                self.resolve_pkg_recursively(dep_name.clone(), dep_constraints)
-                    .await
-                    .with_context(|| {
-                        format!("failed to resolve a dependency package `{dep_name}` of `{name}`")
-                    })
+                self.resolve_pkg_recursively(
+                    dep_name.clone(),
+                    dep_constraints,
+                    constraint_storage.clone(),
+                )
+                .await
+                .with_context(|| {
+                    format!("failed to resolve a dependency package `{dep_name}` of `{name}`")
+                })
             });
         }
 
