@@ -9,7 +9,7 @@ use string_cache::DefaultAtom;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use crate::util::intersection_union::Intersect;
+use crate::util::{intersection_union::Intersect, wrap};
 
 #[async_trait]
 #[auto_impl(Arc, Box, &)]
@@ -96,6 +96,15 @@ impl Solver {
         Ok(versions)
     }
 
+    /// Resolve all packages recursively.
+    async fn resolve_all_pkgs(&self, pkgs: Vec<PackageName>) -> Result<()> {
+        wrap(async move {
+            //
+        })
+        .await
+        .with_context(|| format!("failed to resolve a package in the list `{:?}`", pkgs))
+    }
+
     async fn solve(&self) -> Result<Solution> {
         info!("Solving versions using Solver");
 
@@ -145,6 +154,24 @@ impl Solver {
         }
 
         dbg!(&merged_constraints);
+
+        // Now we have optimal constraints per each package.
+        // We now fetch all
+
+        let pkgs = self
+            .constraints
+            .candidate_packages
+            .iter()
+            .cloned()
+            .chain(
+                self.constraints
+                    .compatible_packages
+                    .iter()
+                    .map(|v| v.name.clone()),
+            )
+            .collect::<Vec<_>>();
+
+        self.resolve_all_pkgs(pkgs).await?;
 
         Ok(Solution {})
     }
