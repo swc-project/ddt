@@ -105,6 +105,7 @@ impl Solver {
         Ok(versions)
     }
 
+    #[tracing::instrument(skip(self, constraints))]
     #[async_recursion]
     async fn resolve_pkg_recursively(
         &self,
