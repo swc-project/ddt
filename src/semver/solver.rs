@@ -114,6 +114,8 @@ impl Solver {
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
     ) -> Result<Vec<Arc<FullPackage>>> {
+        info!("Resolving package `{}` recursively", name);
+
         let pkg_constraints = constraints
             .get(&name)
             .cloned()
