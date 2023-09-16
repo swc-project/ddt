@@ -175,8 +175,20 @@ impl Solver {
         // them to one per a package.
         let mut merged_constraints = AHashMap::<_, VersionReq>::default();
 
+        for (pkg_name, constraints) in constarints_per_pkg.iter() {
+            let mut merged = VersionReq::STAR;
+
+            for c in constraints.iter() {
+                merged = intersect_version_req(merged, c.clone());
+            }
+
+            merged_constraints.insert(pkg_name.clone(), merged);
+        }
+
         dbg!(&constarints_per_pkg);
 
         Ok(Solution {})
     }
 }
+
+fn intersect_version_req(a: VersionReq, b: VersionReq) -> VersionReq {}
