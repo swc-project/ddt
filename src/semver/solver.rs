@@ -111,31 +111,7 @@ impl Solver {
         Ok(versions)
     }
 
-    async fn get_all_packkages(
-        &self,
-    ) -> Result<AHashMap<PackageName, AHashMap<Version, PackageVersion>>> {
-        let mut all_pkgs: AHashMap<PackageName, AHashMap<Version, PackageVersion>> =
-            AHashMap::new();
-
-        for constraint in self.constraints.compatible_packages.iter() {
-            let versions = self
-                .pkg_mgr
-                .resolve(&constraint.name, &constraint.constraints)
-                .await?;
-
-            let e = all_pkgs.entry(constraint.name.clone()).or_default();
-
-            for v in versions {
-                e.insert(v.version.clone(), v);
-            }
-        }
-
-        Ok(all_pkgs)
-    }
-
     async fn solve(&self) -> Result<Solution> {
-        let all_pkgs = self.get_all_packkages();
-
         Ok(Solution {})
     }
 }
