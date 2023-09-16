@@ -149,15 +149,15 @@ impl Solver {
             .map(PackageName::from)
             .collect::<Vec<_>>();
 
-        let mut expanded_constraints = vec![];
+        let mut possible_pkgs = vec![];
 
         for constraint in self.constraints.compatible_packages.iter() {
             let pkg = self.get_pkg(constraint).await?;
 
-            expanded_constraints.push(pkg.clone());
+            possible_pkgs.push(pkg.clone());
         }
 
-        dbg!(&expanded_constraints);
+        dbg!(&possible_pkgs);
 
         Ok(Solution {})
     }
