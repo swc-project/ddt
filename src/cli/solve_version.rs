@@ -4,7 +4,10 @@ use anyhow::{Context, Result};
 use clap::Args;
 
 use crate::{
-    semver::solver::{solve, CargoPackageManager, Constraints, PackageConstraint},
+    semver::{
+        cargo::CargoPackageManager,
+        solver::{solve, Constraints, PackageConstraint},
+    },
     util::wrap,
 };
 
