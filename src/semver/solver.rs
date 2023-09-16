@@ -74,11 +74,14 @@ struct Solver {
 
     /// Being lazy is very important here. It will reduce parallelism, but
     /// reducing network operation is much bigger.
-    cached_pkgs: RwLock<AHashMap<PackageName, Arc<Vec<PackageVersion>>>>,
+    cached_pkgs: RwLock<AHashMap<PackageName, Versions>>,
 }
 
+/// All versions of a **single** package.
+type Versions = Arc<Vec<PackageVersion>>;
+
 impl Solver {
-    async fn get_pkg(&self, c: &PackageConstraint) -> Result<Arc<Vec<PackageVersion>>> {
+    async fn get_pkg(&self, c: &PackageConstraint) -> Result<Versions> {
         if let Some(pkgs) = self.cached_pkgs.read().await.get(&c.name) {
             return Ok(pkgs.clone());
         }
