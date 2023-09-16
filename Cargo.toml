@@ -16,7 +16,7 @@ async-trait = "0.1.73"
 auto_impl = "1.1.0"
 cargo_metadata = "0.15.2"
 clap = { version = "4.0.29", features = ["derive"] }
-crates-index = "2.1.1"
+crates-index = { version = "2.1.1", features = ["git"] }
 futures = "0.3.25"
 semver = { version = "1.0.18", features = ["serde"] }
 serde = { version = "1.0.148", features = ["derive"] }
