@@ -155,12 +155,12 @@ impl Solver {
             .collect::<Vec<_>>();
 
         // Merge all constraints into one, but per package.
-        let mut merged_constarints = AHashMap::<_, Vec<_>>::default();
+        let mut constarints_per_pkg = AHashMap::<_, Vec<_>>::default();
 
         for constraint in self.constraints.compatible_packages.iter() {
             let versions = self.get_pkg(constraint).await?;
 
-            let e = merged_constarints
+            let e = constarints_per_pkg
                 .entry(constraint.name.clone())
                 .or_default();
 
@@ -173,8 +173,9 @@ impl Solver {
 
         // We now iterate over the merged constraints (again, per package) and combine
         // them to one per a package.
+        let mut merged_constraints = AHashMap::<_, VersionReq>::default();
 
-        dbg!(&merged_constarints);
+        dbg!(&constarints_per_pkg);
 
         Ok(Solution {})
     }
