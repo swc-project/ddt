@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use ahash::AHashMap;
-use anyhow::{anyhow, Context, Result};
+use ahash::{AHashMap, AHashSet};
+use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use auto_impl::auto_impl;
@@ -48,12 +48,6 @@ pub struct PackageVersion {
     pub deps: Vec<Dependency>,
 }
 
-#[derive(Debug, Clone)]
-pub struct FullPackage {
-    pub version: PackageVersion,
-    pub constraints_for_deps: ConstraintsPerPkg,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Dependency {
     pub name: PackageName,
@@ -69,6 +63,8 @@ pub async fn solve(
         pkg_mgr,
         cached_pkgs: Default::default(),
         cache_full_pkg: Default::default(),
+        constraints_for_deps: Default::default(),
+        resolution_started: Default::default(),
     };
 
     solver.solve().await
@@ -80,7 +76,11 @@ struct Solver {
 
     cached_pkgs: RwLock<AHashMap<PackageName, Versions>>,
 
-    cache_full_pkg: RwLock<AHashMap<Versions, Vec<Arc<FullPackage>>>>,
+    cache_full_pkg: RwLock<AHashMap<Versions, Vec<Arc<PackageVersion>>>>,
+
+    /// Used to prevent infinite recursion of `resolve_pkg_recursively`.
+    resolution_started: RwLock<AHashSet<PackageName>>,
+    constraints_for_deps: RwLock<AHashMap<PackageVersion, ConstraintsPerPkg>>,
 }
 
 /// All versions of a **single** package.
@@ -113,7 +113,7 @@ impl Solver {
         &self,
         name: PackageName,
         constraints: Arc<ConstraintsPerPkg>,
-    ) -> Result<Vec<Arc<FullPackage>>> {
+    ) -> Result<Vec<Arc<PackageVersion>>> {
         info!("Resolving package `{}` recursively", name);
 
         let pkg_constraints = constraints
@@ -167,18 +167,9 @@ impl Solver {
             let futures = futures.collect::<Vec<_>>().await;
 
             for f in futures {
-                result.extend(
-                    f?.into_iter()
-                        .map(|f| FullPackage {
-                            version: f.version.clone(),
-                            constraints_for_deps: {
-                                let mut map = (*dep_constraints).clone();
-                                map.extend(f.constraints_for_deps.clone());
-                                map
-                            },
-                        })
-                        .map(Arc::new),
-                );
+                let f = f?;
+
+                result.extend(f);
             }
         }
 
@@ -204,30 +195,22 @@ impl Solver {
             .map(PackageName::from)
             .collect::<Vec<_>>();
 
-        let constraints = {
+        {
             let mut constraints = ConstraintsPerPkg::default();
 
             for constraint in self.constraints.compatible_packages.iter() {
                 constraints.insert(constraint.name.clone(), constraint.constraints.clone());
             }
 
-            let mut result = constraints.clone();
             let constraints = Arc::new(constraints);
 
             for pkg in self.constraints.compatible_packages.iter() {
-                let full_pkgs = self
-                    .resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
+                self.resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
                     .await?;
-
-                for pkg in full_pkgs.iter() {
-                    result.extend((*pkg.constraints_for_deps).clone());
-                }
             }
-
-            result
         };
 
-        dbg!(&constraints);
+        dbg!(&self.constraints_for_deps.read().await);
 
         Ok(Solution {})
     }
