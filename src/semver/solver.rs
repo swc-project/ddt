@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use ahash::{AHashMap, AHashSet};
 use anyhow::{Context, Result};
@@ -195,9 +195,15 @@ impl Solver {
         Ok(())
     }
 
+    #[tracing::instrument(skip_all)]
     async fn solve(&self) -> Result<Solution> {
+        self.solver_inner().await
+    }
+
+    async fn solver_inner(&self) -> Result<Solution> {
         info!("Solving versions using Solver");
 
+        let start = Instant::now();
         let constraints = {
             let mut constraints = ConstraintStorage::root();
 
@@ -214,6 +220,7 @@ impl Solver {
 
             ConstraintStorage::unfreeze(constraints)
         };
+        info!("Resolved recursively in {:?}", start.elapsed());
 
         // dbg!(&constraints);
 
