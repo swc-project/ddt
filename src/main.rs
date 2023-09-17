@@ -33,6 +33,8 @@ async fn main() -> Result<()> {
 
     let args = CliArgs::parse();
 
+    let start = std::time::Instant::now();
+
     info!("Start");
 
     match args.cmd {
@@ -46,6 +48,8 @@ async fn main() -> Result<()> {
             cmd.run().await?;
         }
     }
+
+    info!("End in {:?}", start.elapsed());
 
     Ok(())
 }
