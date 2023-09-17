@@ -116,7 +116,7 @@ impl Solver {
             return Ok(());
         }
 
-        info!("Resolving package `{}` recursively", name);
+        debug!("Resolving package `{}` recursively", name);
 
         let pkg = self
             .get_pkg(&PackageConstraint {
