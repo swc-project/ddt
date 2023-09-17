@@ -34,3 +34,20 @@ tokio = { version = "1.22.0", features = [
 ] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["fmt"] }
+
+[profile.release]
+lto = "off"
+# Strip debug symbols
+# strip = "symbols"
+
+[profile.bench]
+debug = true
+
+[profile.dev]
+split-debuginfo = "unpacked"
+
+[profile.dev.build-override]
+opt-level = 3
+
+[profile.dev.package."*"]
+opt-level = 3
