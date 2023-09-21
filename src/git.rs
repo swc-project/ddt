@@ -1,8 +1,10 @@
+#![allow(unused)]
+
 //! Utils for interacting with git.
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Context, Result};
-use futures::try_join;
+use futures::{try_join, Future};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use tokio::fs;
@@ -28,6 +30,10 @@ static GIT_DIFF_ARGS: &[&str] = &[
 static GIT_APPLY_ARGS: &[&str] = &["-v", "--whitespace=nowarn", "--recount", "--unidiff-zero"];
 
 /// Utility for git hooks, which cannot use commands like `git add`.
+///
+/// Any modification of the files in staging area (from hook) **must** be done
+/// in the git workflow.
+
 #[derive(Debug)]
 pub struct GitWorkflow {
     matched_file_chunks: Arc<Vec<Vec<String>>>,
@@ -55,8 +61,34 @@ pub struct MergeStatus {
     msg: Option<Vec<u8>>,
 }
 
+const MERGE_HEAD: &str = "MERGE_HEAD";
+const MERGE_MODE: &str = "MERGE_MODE";
+const MERGE_MSG: &str = "MERGE_MSG";
+
 /// Methods ported from lint-staged.
 impl GitWorkflow {
+    pub fn new(
+        matched_file_chunks: Arc<Vec<Vec<String>>>,
+        git_dir: Arc<PathBuf>,
+        git_config_dir: Arc<PathBuf>,
+        allow_empty: bool,
+        diff: Option<String>,
+        diff_filter: Option<String>,
+    ) -> Result<Arc<Self>> {
+        Ok(Arc::new(Self {
+            merge_head_filename: git_config_dir.join(MERGE_HEAD),
+            merge_mode_filename: git_config_dir.join(MERGE_MODE),
+            merge_msg_filename: git_config_dir.join(MERGE_MSG),
+
+            matched_file_chunks,
+            git_dir,
+            git_config_dir,
+            allow_empty,
+            diff,
+            diff_filter,
+        }))
+    }
+
     #[tracing::instrument(name = "GitWorkflow::backup_merge_status", skip_all)]
     pub async fn backup_merge_status(self: Arc<Self>) -> Result<MergeStatus> {
         wrap(async move { self.backup_merge_status_inner().await })
@@ -105,7 +137,7 @@ impl GitWorkflow {
             w(self.merge_head_filename.clone(), status.header),
             w(self.merge_mode_filename.clone(), status.mode),
             w(self.merge_msg_filename.clone(), status.msg),
-        );
+        )?;
 
         Ok(())
     }
@@ -382,6 +414,7 @@ impl GitWorkflow {
     async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<String> {
         let output = PrettyCmd::new("Running git command", "git")
             .dir(&*self.git_dir)
+            .args(&["-c", "submodule.recurse=false"])
             .args(args)
             .output()
             .await

@@ -14,14 +14,14 @@ pub struct GitCommand {
 impl GitCommand {
     pub async fn run(self) -> Result<()> {
         match self.cmd {
-            Inner::ResolveLockfileConflict(cmd) => cmd.run().await,
+            Inner::ResolveConflict(cmd) => cmd.run().await,
         }
     }
 }
 
 #[derive(Debug, Subcommand)]
 enum Inner {
-    ResolveLockfileConflict(ResolveLockfileConflictCommand),
+    ResolveConflict(ResolveConflictCommand),
 }
 
 /// Resolve merge conflicts in the lockfile.
@@ -30,7 +30,7 @@ enum Inner {
 /// This command simply ignores the conflict and runs some command which can
 /// generate the lockfile.
 #[derive(Debug, Args)]
-struct ResolveLockfileConflictCommand {
+struct ResolveConflictCommand {
     args: Vec<String>,
 }
 
@@ -63,7 +63,7 @@ impl LockfileType {
     }
 }
 
-impl ResolveLockfileConflictCommand {
+impl ResolveConflictCommand {
     pub async fn run(self) -> Result<()> {
         wrap(async move {
             if self.args.len() != 5 {
@@ -80,21 +80,8 @@ impl ResolveLockfileConflictCommand {
             let a_path = &self.args[1];
             let b_path = &self.args[2];
             let file_name = &self.args[4];
-            let backup_file = format!("{}.bk", file_name);
 
             let lockfile_type = LockfileType::from_suffix(file_name)?;
-
-            for path in &[file_name, a_path, b_path] {
-                let path_content = fs::read_to_string(&path)
-                    .await
-                    .context("failed to store a data")?;
-
-                println!("{}:\n{}", path, path_content)
-            }
-
-            fs::copy(&file_name, &backup_file)
-                .await
-                .context("failed to rename the file to .bk")?;
 
             fs::remove_file(b_path)
                 .await
@@ -127,24 +114,6 @@ impl ResolveLockfileConflictCommand {
             fs::rename(&file_name, a_path)
                 .await
                 .context("failed to rename the result as `a` file")?;
-
-            fs::rename(backup_file, file_name)
-                .await
-                .context("failed to restore the ancestor")?;
-
-            for path in &[file_name, a_path] {
-                let path_content = fs::read_to_string(&path)
-                    .await
-                    .context("failed to store a data")?;
-
-                println!("Final\n{}:\n{}", path, path_content)
-            }
-
-            // PrettyCmd::new("Add the lockfile to the index".into(), "git".into())
-            //     .arg("add")
-            //     .arg(file_name)
-            //     .exec()
-            //     .await?;
 
             Ok(())
         })
