@@ -52,8 +52,8 @@ impl GitWorkflow {
         })
     }
 
-    /// We need to remove partially staged files, to avoid tasks from seeing
-    /// them.
+    /// Remove unstaged changes to all partially staged files, to avoid tasks
+    /// from seeing them
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
     pub async fn hide_unstaged_changes(
         self: Arc<Self>,
