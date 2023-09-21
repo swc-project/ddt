@@ -77,17 +77,14 @@ impl ResolveLockfileConflictCommand {
                 )
             }
 
-            let ancestor_path = &self.args[0];
             let a_path = &self.args[1];
             let b_path = &self.args[2];
             let file_name = &self.args[4];
+            let backup_file = format!("{}.bk", file_name);
 
-            let original_file_content = fs::read(&file_name)
-                .await
-                .context("failed to store ancestor data")?;
             let lockfile_type = LockfileType::from_suffix(file_name)?;
 
-            for path in &[ancestor_path, a_path, b_path] {
+            for path in &[file_name, a_path, b_path] {
                 let path_content = fs::read_to_string(&path)
                     .await
                     .context("failed to store a data")?;
@@ -95,9 +92,9 @@ impl ResolveLockfileConflictCommand {
                 println!("{}:\n{}", path, path_content)
             }
 
-            // fs::remove_file(a_path)
-            //     .await
-            //     .context("failed to remove `a`")?;
+            fs::copy(&file_name, &backup_file)
+                .await
+                .context("failed to rename the file to .bk")?;
 
             fs::remove_file(b_path)
                 .await
@@ -105,7 +102,7 @@ impl ResolveLockfileConflictCommand {
 
             fs::rename(a_path, file_name)
                 .await
-                .context("failed to rename")?;
+                .context("failed to rename `a` to the file")?;
 
             match lockfile_type {
                 LockfileType::Pnpm => {
@@ -131,9 +128,17 @@ impl ResolveLockfileConflictCommand {
                 .await
                 .context("failed to rename the result as `a` file")?;
 
-            fs::write(&file_name, &original_file_content)
+            fs::rename(backup_file, file_name)
                 .await
                 .context("failed to restore the ancestor")?;
+
+            for path in &[file_name, a_path] {
+                let path_content = fs::read_to_string(&path)
+                    .await
+                    .context("failed to store a data")?;
+
+                println!("Final\n{}:\n{}", path, path_content)
+            }
 
             Ok(())
         })
