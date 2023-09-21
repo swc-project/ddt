@@ -12,6 +12,7 @@ use crate::util::{wrap, PrettyCmd};
 pub struct GitWorkflow {
     matched_file_chunks: Arc<Vec<Vec<String>>>,
     git_dir: Arc<PathBuf>,
+    git_config_dir: Arc<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -219,5 +220,12 @@ impl GitWorkflow {
             .context("git command failed")?;
 
         Ok(())
+    }
+
+    fn get_hidden_filepath(&self, filename: &str) -> Result<PathBuf> {
+        self.git_config_dir
+            .join(filename)
+            .canonicalize()
+            .context("failed to get hidden filepath")
     }
 }
