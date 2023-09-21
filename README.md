@@ -10,7 +10,7 @@ cargo install ddt
 
 ## `ddt git`
 
-### `ddt git resolve-lockfile-conflict`
+### `ddt git resolve-conflict`
 
 This command allows you to resolve conflicts in lockfiles automatically.
 
@@ -36,25 +36,3 @@ If your project uses `pnpm` and `cargo` for managing dependencies, you can add t
  pnpm.yaml merge=ddt-lockfile
  Cargo.lock merge=ddt-lockfile
 ```
-
-## `ddt clean`
-
-### Features
-
-- Clean dead git branches.
-- Remove **outdated** cargo artifacts.
-
----
-
-Usage: `ddt clean path/to/dir`
-
-If you run `ddt clean .` from a cargo project using git,
-It will remove
-
-- outdated cargo artifacts
-
-This is not perfect, and this currently only removes large files like `.rlib`. Detection of `outdated` depends on `cargo metadata --all-features`. If an artifact for a specific version exists but it's not in dependency graph anymore, it will be removed.
-
-- dead git branches if you pass `--remove-dead-git-branches`
-
-The dead branch is determined by running `git fetch --all`, and branches are removed if upstream tracking branch is gone.

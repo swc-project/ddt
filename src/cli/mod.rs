@@ -1,11 +1,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use self::{
-    clean::CleanCommand, extra::ExtraCommand, git::GitCommand, solve_version::SolveVersionsCommand,
-};
+use self::{extra::ExtraCommand, git::GitCommand, solve_version::SolveVersionsCommand};
 
-mod clean;
 mod extra;
 mod git;
 mod solve_version;
@@ -19,9 +16,6 @@ pub struct CliArgs {
 impl CliArgs {
     pub async fn run(self) -> Result<()> {
         match self.cmd {
-            InnerCmd::Clean(cmd) => {
-                cmd.run().await?;
-            }
             InnerCmd::Git(cmd) => {
                 cmd.run().await?;
             }
@@ -39,7 +33,6 @@ impl CliArgs {
 
 #[derive(Debug, Subcommand)]
 enum InnerCmd {
-    Clean(CleanCommand),
     Git(GitCommand),
     SolveVersions(SolveVersionsCommand),
     X(ExtraCommand),
