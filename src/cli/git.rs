@@ -43,7 +43,7 @@ enum LockfileType {
 }
 impl LockfileType {
     pub fn from_suffix(s: &str) -> Result<Self> {
-        if s.ends_with("pnpm-lock.yml") {
+        if s.ends_with("pnpm-lock.yaml") {
             return Ok(Self::Pnpm);
         }
 
