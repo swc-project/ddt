@@ -7,6 +7,10 @@ use tracing::debug;
 
 use crate::util::{wrap, PrettyCmd};
 
+const STASH: &str = "ddt-git-workflow automatic backup";
+
+const PATCH_UNSTAGED: &str = "ddt-git-workflow_unstaged.patch";
+
 static GIT_DIFF_ARGS: &[&str] = &[
     "--binary",          // support binary files
     "--unified=0",       // do not add lines around diff for consistent behaviour
@@ -47,11 +51,13 @@ impl GitWorkflow {
         let partially_staged_files = self.get_partially_staged_files().await?;
 
         if !partially_staged_files.is_empty() {
-            let unstage_patch = self.get_hidden_filepath(PATCH_UNSTAGED);
+            let unstage_patch = self
+                .get_hidden_filepath(PATCH_UNSTAGED)
+                .context("failed to get the path for the unstage patch file")?;
             let files = process_renames(partially_staged_files);
 
             let mut args = vec![String::from("diff")];
-            args.extend(GIT_DIFF_ARGS);
+            args.extend(GIT_DIFF_ARGS.iter().map(|v| v.to_string()));
             args.push("--output".into());
 
             args.push(unstage_patch);
