@@ -5,6 +5,7 @@ use self::{clean::CleanCommand, extra::ExtraCommand, solve_version::SolveVersion
 
 mod clean;
 mod extra;
+mod git;
 mod solve_version;
 
 #[derive(Debug, Parser)]
