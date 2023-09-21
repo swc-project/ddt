@@ -31,6 +31,13 @@ pub struct GitWorkflow {
     matched_file_chunks: Arc<Vec<Vec<String>>>,
     git_dir: Arc<PathBuf>,
     git_config_dir: Arc<PathBuf>,
+
+    diff: Option<String>,
+    diff_filter: Option<String>,
+
+    merge_head_filename: PathBuf,
+    merge_mode_filename: PathBuf,
+    merge_msg_filename: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -58,11 +65,11 @@ impl GitWorkflow {
         debug!("Backing up merge state...");
 
         let (header, mode, msg) = try_join!(
-            fs::read(&*self.mergeHeadFilename),
-            fs::read(&*self.mergeModeFilename),
-            fs::read(&*self.mergeMsgFilename)
+            fs::read(&*self.merge_head_filename),
+            fs::read(&*self.merge_mode_filename),
+            fs::read(&*self.merge_msg_filename)
         )
-        .await?;
+        .context("failed to read merge file")?;
 
         debug!("Done backing up merge state!");
 
