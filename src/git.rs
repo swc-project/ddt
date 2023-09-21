@@ -60,7 +60,7 @@ impl GitWorkflow {
             args.extend(GIT_DIFF_ARGS.iter().map(|v| v.to_string()));
             args.push("--output".into());
 
-            args.push(unstage_patch);
+            args.push(unstage_patch.display().to_string());
             args.push("--".into());
             args.extend(files);
 
@@ -246,6 +246,13 @@ impl GitWorkflow {
             .context("failed to get hidden filepath")
     }
 }
+
+/// In git status machine output, renames are presented as `to`NUL`from`
+/// When diffing, both need to be taken into account, but in some cases on the
+/// `to`.
+///
+/// Ported from https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/gitWorkflow.js#L29-L44
+fn process_renames(files: Vec<String>, include_rename_from: bool) {}
 
 /// Ported from https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/getDiffCommand.js#L1
 fn get_diff_command(diff: Option<&str>, diff_filter: Option<&str>) -> Vec<String> {
