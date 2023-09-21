@@ -140,6 +140,12 @@ impl ResolveLockfileConflictCommand {
                 println!("Final\n{}:\n{}", path, path_content)
             }
 
+            // PrettyCmd::new("Add the lockfile to the index".into(), "git".into())
+            //     .arg("add")
+            //     .arg(file_name)
+            //     .exec()
+            //     .await?;
+
             Ok(())
         })
         .await
