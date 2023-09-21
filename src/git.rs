@@ -209,7 +209,7 @@ impl GitWorkflow {
     async fn cleanup_inner(self: Arc<Self>) -> Result<()> {
         debug!("Dropping backup stash...");
 
-        let backup_stash = self.get_backup_stash().await?;
+        let backup_stash = self.clone().get_backup_stash().await?;
         let args = vec![
             String::from("stash"),
             "drop".into(),
@@ -247,14 +247,21 @@ impl GitWorkflow {
     }
 
     #[tracing::instrument(name = "GitWorkflow::get_backup_stash", skip_all)]
-    async fn get_backup_stash(self: Arc<Self>) -> Result<PathBuf> {
+    async fn get_backup_stash(self: Arc<Self>) -> Result<String> {
         wrap(async move { self.get_backup_stash_inner().await })
             .await
             .context("failed to get backup stash")
     }
 
-    async fn get_backup_stash_inner(self: Arc<Self>) -> Result<PathBuf> {
-        let stashs = self.exec_git(vec!["stash".into(), "list".into()]).await?;
+    async fn get_backup_stash_inner(self: Arc<Self>) -> Result<String> {
+        let stashes = self.exec_git(vec!["stash".into(), "list".into()]).await?;
+
+        let idx = stashes.lines().find(|line| line.contains(STASH));
+
+        match idx {
+            Some(v) => Ok(v.to_string()),
+            None => bail!("ddt-stash automatic backup is missing!"),
+        }
     }
 }
 
