@@ -1,6 +1,6 @@
-use std::{ffi::OsStr, fmt::Display, future::Future, path::Path};
+use std::{ffi::OsStr, fmt::Display, future::Future, path::Path, process::Stdio};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use tokio::process::Command;
 use tracing::info;
 
@@ -54,6 +54,18 @@ impl PrettyCmd {
 
         if status.success() {
             Ok(())
+        } else {
+            Err(anyhow::anyhow!("{} failed", self.description))
+        }
+    }
+
+    pub async fn output(&mut self) -> Result<String> {
+        info!("Running: {}\n{:?}", self.description, self.inner);
+
+        let output = self.inner.stderr(Stdio::inherit()).output().await?;
+
+        if output.status.success() {
+            String::from_utf8(output.stdout).context("failed to parse output as utf-8")
         } else {
             Err(anyhow::anyhow!("{} failed", self.description))
         }

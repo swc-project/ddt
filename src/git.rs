@@ -228,15 +228,15 @@ impl GitWorkflow {
         self.exec_git_inner(args).await
     }
 
-    async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<()> {
-        PrettyCmd::new("Running git command", "git")
+    async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<String> {
+        let output = PrettyCmd::new("Running git command", "git")
             .dir(&*self.git_dir)
             .args(args)
-            .exec()
+            .output()
             .await
             .context("git command failed")?;
 
-        Ok(())
+        Ok(output)
     }
 
     fn get_hidden_filepath(&self, filename: &str) -> Result<PathBuf> {
@@ -244,6 +244,17 @@ impl GitWorkflow {
             .join(filename)
             .canonicalize()
             .context("failed to get hidden filepath")
+    }
+
+    #[tracing::instrument(name = "GitWorkflow::get_backup_stash", skip_all)]
+    async fn get_backup_stash(self: Arc<Self>) -> Result<PathBuf> {
+        wrap(async move { self.get_backup_stash_inner().await })
+            .await
+            .context("failed to get backup stash")
+    }
+
+    async fn get_backup_stash_inner(self: Arc<Self>) -> Result<PathBuf> {
+        let stashs = self.exec_git(vec!["stash".into(), "list".into()]).await?;
     }
 }
 
