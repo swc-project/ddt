@@ -105,7 +105,7 @@ impl GitWorkflow {
             w(self.merge_head_filename.clone(), status.header),
             w(self.merge_mode_filename.clone(), status.mode),
             w(self.merge_msg_filename.clone(), status.msg),
-        );
+        )?;
 
         Ok(())
     }
