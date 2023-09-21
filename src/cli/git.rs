@@ -13,17 +13,28 @@ pub struct GitCommand {
 impl GitCommand {
     pub async fn run(self) -> Result<()> {
         match self.cmd {
-            Inner::Lockfile(cmd) => cmd.run().await,
+            Inner::ResolveLockfileConflict(cmd) => cmd.run().await,
         }
     }
 }
 
 #[derive(Debug, Subcommand)]
 enum Inner {
-    /// Resolves merge conflicts in the lockfile.
-    Lockfile(LockfileCommand),
+    ResolveLockfileConflict(ResolveLockfileConflictCommand),
 }
 
-///
+/// Resolve merge conflicts in the lockfile.
 #[derive(Debug, Args)]
-struct LockfileCommand {}
+struct ResolveLockfileConflictCommand {}
+
+impl ResolveLockfileConflictCommand {
+    pub async fn run(self) -> Result<()> {
+        wrap(async move {
+            // TODO
+
+            bail!("not implemented")
+        })
+        .await
+        .context("failed to install auto-completion")
+    }
+}
