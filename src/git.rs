@@ -3,7 +3,6 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Context, Result};
 use once_cell::sync::Lazy;
-use rayon::vec;
 use regex::Regex;
 use tokio::fs;
 use tracing::debug;
@@ -218,24 +217,26 @@ impl GitWorkflow {
     async fn restore_original_state_inner(self: Arc<Self>) -> Result<()> {
         debug!("Restoring original state...");
 
-        self.exec_git(vec!["reset".into(), "--hard".into(), "HEAD".into()])
+        self.clone()
+            .exec_git(vec!["reset".into(), "--hard".into(), "HEAD".into()])
             .await?;
 
         {
-            let stash_path = self.get_backup_stash().await?;
+            let stash_path = self.clone().get_backup_stash().await?;
 
-            self.exec_git(vec![
-                "stash".into(),
-                "apply".into(),
-                "--quiet".into(),
-                "--index".into(),
-                stash_path,
-            ])
-            .await?;
+            self.clone()
+                .exec_git(vec![
+                    "stash".into(),
+                    "apply".into(),
+                    "--quiet".into(),
+                    "--index".into(),
+                    stash_path,
+                ])
+                .await?;
         }
 
         // Restore meta information about ongoing git merge
-        self.restore_merge_status().await?;
+        self.clone().restore_merge_status().await?;
 
         // If stashing resurrected deleted files, clean them out
 
