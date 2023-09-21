@@ -252,7 +252,22 @@ impl GitWorkflow {
 /// `to`.
 ///
 /// Ported from https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/gitWorkflow.js#L29-L44
-fn process_renames(files: Vec<String>, include_rename_from: bool) {}
+fn process_renames(files: Vec<String>, include_rename_from: bool) -> Vec<String> {
+    files.into_iter().fold(vec![], |mut flattened, file| {
+        if let Some(idx) = file.find('\0') {
+            let (to, from) = file.split_at(idx);
+
+            if include_rename_from {
+                flattened.push(from.to_string());
+            }
+            flattened.push(to.to_string());
+        } else {
+            flattened.push(file);
+        }
+
+        flattened
+    })
+}
 
 /// Ported from https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/getDiffCommand.js#L1
 fn get_diff_command(diff: Option<&str>, diff_filter: Option<&str>) -> Vec<String> {
