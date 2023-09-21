@@ -188,7 +188,7 @@ impl GitWorkflow {
 
         {
             // Clean out patch
-            let patch_file = self.get_hidden_filepath(PATCH_STAGED);
+            let patch_file = self.get_hidden_filepath(PATCH_UNSTAGED)?;
             fs::remove_file(&patch_file)
                 .await
                 .context("failed to remove patch file")?
