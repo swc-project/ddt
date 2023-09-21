@@ -35,6 +35,6 @@ impl ResolveLockfileConflictCommand {
             bail!("not implemented")
         })
         .await
-        .context("failed to install auto-completion")
+        .context("failed to resolve lockfile conflict")
     }
 }
