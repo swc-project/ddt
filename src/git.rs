@@ -2,6 +2,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Context, Result};
+use tokio::fs;
 use tracing::debug;
 
 use crate::util::{wrap, PrettyCmd};
@@ -140,7 +141,45 @@ impl GitWorkflow {
             .context("failed to restore original state")
     }
 
-    async fn restore_original_state_inner(self: Arc<Self>) -> Result<()> {}
+    async fn restore_original_state_inner(self: Arc<Self>) -> Result<()> {
+        debug!("Restoring original state...");
+
+        self.exec_git(vec!["reset".into(), "--hard".into(), "HEAD".into()])
+            .await?;
+
+        {
+            let stash_path = self.get_backup_stash().await?;
+
+            self.exec_git(vec![
+                "stash".into(),
+                "apply".into(),
+                "--quiet".into(),
+                "--index".into(),
+                stash_path,
+            ])
+            .await?;
+        }
+
+        // Restore meta information about ongoing git merge
+        self.restore_merge_status().await?;
+
+        // If stashing resurrected deleted files, clean them out
+
+        // TODO(kdy1):
+        //   await Promise.all(this.deletedFiles.map((file) => unlink(file)))
+
+        {
+            // Clean out patch
+            let patch_file = self.get_hidden_filepath(PATCH_STAGED);
+            fs::remove_file(&patch_file)
+                .await
+                .context("failed to remove patch file")?
+        };
+
+        debug!("Done restoring original state!");
+
+        Ok(())
+    }
 
     #[tracing::instrument(name = "GitWorkflow::cleanup", skip_all)]
     pub async fn cleanup(self: Arc<Self>) -> Result<()> {
