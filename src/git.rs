@@ -382,6 +382,7 @@ impl GitWorkflow {
     async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<String> {
         let output = PrettyCmd::new("Running git command", "git")
             .dir(&*self.git_dir)
+            .args(&["-c", "submodule.recurse=false"])
             .args(args)
             .output()
             .await
