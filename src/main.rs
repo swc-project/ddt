@@ -5,6 +5,7 @@ use tracing::info;
 use crate::cli::CliArgs;
 
 mod cli;
+mod git;
 mod semver;
 mod util;
 
