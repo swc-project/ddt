@@ -229,3 +229,20 @@ impl GitWorkflow {
             .context("failed to get hidden filepath")
     }
 }
+
+/// Ported from https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/getDiffCommand.js#L1
+fn get_diff_command(diff: Option<&str>, diff_filter: Option<&str>) -> Vec<String> {
+    let diff_filter_arg = diff_filter.map_or("ACMR", |s| s.trim());
+
+    let diff_args: Vec<&str> = diff.map_or(vec!["staged"], |s| s.trim().split(' ').collect());
+
+    let mut args = vec![
+        "diff".into(),
+        "--name-only".into(),
+        "-z".into(),
+        format!("--diff-filter={diff_filter_arg}"),
+    ];
+    args.extend(diff_args.iter().map(|s| s.to_string()));
+
+    args
+}
