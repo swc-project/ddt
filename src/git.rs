@@ -1,15 +1,16 @@
 //! Utils for interacting with git.
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Context, Result};
 use tracing::debug;
 
-use crate::util::wrap;
+use crate::util::{wrap, PrettyCmd};
 
 /// Utility for git hooks, which cannot use commands like `git add`.
 #[derive(Debug)]
 pub struct GitWorkflow {
     matched_file_chunks: Arc<Vec<Vec<String>>>,
+    git_dir: Arc<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -56,7 +57,7 @@ impl GitWorkflow {
 
     /// Remove unstaged changes to all partially staged files, to avoid tasks
     /// from seeing them
-    #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
+    #[tracing::instrument(name = "GitWorkflow::hide_unstaged_changes", skip_all)]
     pub async fn hide_unstaged_changes(
         self: Arc<Self>,
         partially_staged_files: Arc<Vec<String>>,
@@ -85,7 +86,7 @@ impl GitWorkflow {
     /// Applies back task modifications, and unstaged changes hidden in the
     /// stash.
     /// In case of a merge-conflict retry with 3-way merge.
-    #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
+    #[tracing::instrument(name = "GitWorkflow::apply_modifications", skip_all)]
     pub async fn apply_modifications(self: Arc<Self>) -> Result<()> {
         wrap(async move { self.apply_modifications_inner().await })
             .await
@@ -123,24 +124,39 @@ impl GitWorkflow {
         Ok(())
     }
 
-    #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
+    #[tracing::instrument(name = "GitWorkflow::restore_unstaged_changes", skip_all)]
     pub async fn restore_unstaged_changes(self: Arc<Self>) -> Result<()> {
         self.restore_unstaged_changes_inner().await
     }
 
     async fn restore_unstaged_changes_inner(self: Arc<Self>) -> Result<()> {}
 
-    #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
+    #[tracing::instrument(name = "GitWorkflow::restore_original_state", skip_all)]
     pub async fn restore_original_state(self: Arc<Self>) -> Result<()> {
         self.restore_original_state_inner().await
     }
 
     async fn restore_original_state_inner(self: Arc<Self>) -> Result<()> {}
 
-    #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
+    #[tracing::instrument(name = "GitWorkflow::cleanup", skip_all)]
     pub async fn cleanup(self: Arc<Self>) -> Result<()> {
         self.cleanup_inner().await
     }
 
     async fn cleanup_inner(self: Arc<Self>) -> Result<()> {}
+
+    #[tracing::instrument(name = "GitWorkflow::exec_git", skip_all)]
+    async fn exec_git(self: Arc<Self>, args: Vec<String>) -> Result<()> {
+        self.exec_git_inner(args).await
+    }
+
+    async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<()> {
+        PrettyCmd::new("Running git command", "git")
+            .args(args)
+            .exec()
+            .await
+            .context("git command failed")?;
+
+        Ok(())
+    }
 }

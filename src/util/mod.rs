@@ -34,6 +34,14 @@ impl PrettyCmd {
         self
     }
 
+    pub fn args<E>(&mut self, arg: impl IntoIterator<Item = E>) -> &mut Self
+    where
+        E: AsRef<OsStr>,
+    {
+        self.inner.args(arg);
+        self
+    }
+
     pub async fn exec(&mut self) -> Result<()> {
         info!("Running: {}\n{:?}", self.description, self.inner);
 
