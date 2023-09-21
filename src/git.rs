@@ -32,6 +32,7 @@ pub struct GitWorkflow {
     git_dir: Arc<PathBuf>,
     git_config_dir: Arc<PathBuf>,
 
+    allow_empty: bool,
     diff: Option<String>,
     diff_filter: Option<String>,
 
@@ -209,15 +210,19 @@ impl GitWorkflow {
         for files in self.matched_file_chunks.iter() {
             let mut args = vec![String::from("add"), "--".into()];
             args.extend(files.iter().cloned());
-            self.exec_git(args).await?;
+            self.clone().exec_git(args).await?;
         }
 
         debug!("Done adding task modifications to index!");
 
         let staged_files_after_add = self
-            .exec_git(get_diff_command(self.diff, self.diffFilter))
+            .clone()
+            .exec_git(get_diff_command(
+                self.diff.as_deref(),
+                self.diff_filter.as_deref(),
+            ))
             .await?;
-        if !staged_files_after_add && !self.allowEmpty {
+        if staged_files_after_add.is_empty() && !self.allow_empty {
             // Tasks reverted all staged changes and the commit would be empty
             // Throw error to stop commit unless `--allow-empty` was used
             bail!("Prevented an empty git commit!")
