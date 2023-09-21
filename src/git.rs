@@ -55,8 +55,34 @@ pub struct MergeStatus {
     msg: Option<Vec<u8>>,
 }
 
+const MERGE_HEAD: &str = "MERGE_HEAD";
+const MERGE_MODE: &str = "MERGE_MODE";
+const MERGE_MSG: &str = "MERGE_MSG";
+
 /// Methods ported from lint-staged.
 impl GitWorkflow {
+    pub fn new(
+        matched_file_chunks: Arc<Vec<Vec<String>>>,
+        git_dir: Arc<PathBuf>,
+        git_config_dir: Arc<PathBuf>,
+        allow_empty: bool,
+        diff: Option<String>,
+        diff_filter: Option<String>,
+    ) -> Result<Self> {
+        Ok(Self {
+            merge_head_filename: git_config_dir.join(MERGE_HEAD),
+            merge_mode_filename: git_config_dir.join(MERGE_MODE),
+            merge_msg_filename: git_config_dir.join(MERGE_MSG),
+
+            matched_file_chunks,
+            git_dir,
+            git_config_dir,
+            allow_empty,
+            diff,
+            diff_filter,
+        })
+    }
+
     #[tracing::instrument(name = "GitWorkflow::backup_merge_status", skip_all)]
     pub async fn backup_merge_status(self: Arc<Self>) -> Result<MergeStatus> {
         wrap(async move { self.backup_merge_status_inner().await })
