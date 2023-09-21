@@ -14,14 +14,14 @@ pub struct GitCommand {
 impl GitCommand {
     pub async fn run(self) -> Result<()> {
         match self.cmd {
-            Inner::ResolveLockfileConflict(cmd) => cmd.run().await,
+            Inner::ResolveConflict(cmd) => cmd.run().await,
         }
     }
 }
 
 #[derive(Debug, Subcommand)]
 enum Inner {
-    ResolveLockfileConflict(ResolveLockfileConflictCommand),
+    ResolveConflict(ResolveConflictCommand),
 }
 
 /// Resolve merge conflicts in the lockfile.
@@ -30,7 +30,7 @@ enum Inner {
 /// This command simply ignores the conflict and runs some command which can
 /// generate the lockfile.
 #[derive(Debug, Args)]
-struct ResolveLockfileConflictCommand {
+struct ResolveConflictCommand {
     args: Vec<String>,
 }
 
@@ -63,7 +63,7 @@ impl LockfileType {
     }
 }
 
-impl ResolveLockfileConflictCommand {
+impl ResolveConflictCommand {
     pub async fn run(self) -> Result<()> {
         wrap(async move {
             if self.args.len() != 5 {
