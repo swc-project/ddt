@@ -224,7 +224,7 @@ impl GitWorkflow {
     }
 
     #[tracing::instrument(name = "GitWorkflow::exec_git", skip_all)]
-    async fn exec_git(self: Arc<Self>, args: Vec<String>) -> Result<()> {
+    async fn exec_git(self: Arc<Self>, args: Vec<String>) -> Result<String> {
         self.exec_git_inner(args).await
     }
 
