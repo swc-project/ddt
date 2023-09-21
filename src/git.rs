@@ -42,7 +42,7 @@ impl GitWorkflow {
     /// both the "from" and "to" filenames, where "from" is no longer on disk.
     #[tracing::instrument(name = "GitWorkflow::get_partially_staged_files", skip_all)]
     pub async fn get_partially_staged_files(self: Arc<Self>) -> Result<PrepareResult> {
-        wrap(async move { self.get_partially_staged_files().await })
+        wrap(async move { self.get_partially_staged_files_inner().await })
             .await
             .context("failed to get partially staged files")
     }
