@@ -82,6 +82,9 @@ impl ResolveLockfileConflictCommand {
             let b_path = &self.args[2];
             let file_name = &self.args[4];
 
+            let original_ancestor = fs::read_to_string(&ancestor_path)
+                .await
+                .context("failed to store ancestor data")?;
             let lockfile_type = LockfileType::from_suffix(file_name)?;
 
             fs::remove_file(a_path)
@@ -92,7 +95,7 @@ impl ResolveLockfileConflictCommand {
                 .await
                 .context("failed to remove `b`")?;
 
-            fs::rename(ancestor_path, a_path)
+            fs::rename(ancestor_path, file_name)
                 .await
                 .context("failed to rename")?;
 
@@ -115,6 +118,14 @@ impl ResolveLockfileConflictCommand {
                     bail!("cargo check? not sure")
                 }
             }
+
+            fs::rename(&file_name, a_path)
+                .await
+                .context("failed to rename the result as `a` file")?;
+
+            fs::write(&file_name, original_ancestor.as_bytes())
+                .await
+                .context("failed to restore the ancestor")?;
 
             Ok(())
         })
