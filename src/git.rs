@@ -8,7 +8,9 @@ use crate::util::wrap;
 
 /// Utility for git hooks, which cannot use commands like `git add`.
 #[derive(Debug)]
-pub struct GitWorkflow {}
+pub struct GitWorkflow {
+    matched_file_chunks: Arc<Vec<Vec<String>>>,
+}
 
 #[derive(Debug, Clone)]
 pub struct PrepareResult {
@@ -28,10 +30,10 @@ impl GitWorkflow {
     async fn prepare_inner(self: Arc<Self>) -> Result<PrepareResult> {
         debug!("Backing up original state...");
 
-        let partially_staged_files = self.getPartiallyStagedFiles().await?;
+        let partially_staged_files = self.get_partially_staged_files().await?;
 
         if !partially_staged_files.is_empty() {
-            let unstage_patch = self.getHiddenFilepath(PATCH_UNSTAGED);
+            let unstage_patch = self.get_hidden_filepath(PATCH_UNSTAGED);
             let files = process_renames(partially_staged_files);
 
             let mut args = vec![String::from("diff")];
@@ -80,12 +82,19 @@ impl GitWorkflow {
         Ok(())
     }
 
+    /// Applies back task modifications, and unstaged changes hidden in the
+    /// stash.
+    /// In case of a merge-conflict retry with 3-way merge.
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
     pub async fn apply_modifications(self: Arc<Self>) -> Result<()> {
-        self.apply_modifications_inner().await
+        wrap(async move { self.apply_modifications_inner().await })
+            .await
+            .context("failed to apply modifications")
     }
 
-    async fn apply_modifications_inner(self: Arc<Self>) -> Result<()> {}
+    async fn apply_modifications_inner(self: Arc<Self>) -> Result<()> {
+        debug!("Adding task modifications to index...");
+    }
 
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
     pub async fn restore_unstaged_changes(self: Arc<Self>) -> Result<()> {
