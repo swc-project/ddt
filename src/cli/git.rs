@@ -106,16 +106,16 @@ impl ResolveLockfileConflictCommand {
 
             match lockfile_type {
                 LockfileType::Pnpm => {
-                    let mut cmd = PrettyCmd::new("pnpm install".to_string(), "pnpm".to_string());
+                    let mut cmd = PrettyCmd::new("pnpm install", "pnpm");
                     cmd.arg("install");
                     cmd.exec().await?;
                 }
                 LockfileType::Yarn => {
-                    let mut cmd = PrettyCmd::new("yarn install".to_string(), "yarn".to_string());
+                    let mut cmd = PrettyCmd::new("yarn install", "yarn");
                     cmd.exec().await?;
                 }
                 LockfileType::Npm => {
-                    let mut cmd = PrettyCmd::new("npm ci".to_string(), "npm".to_string());
+                    let mut cmd = PrettyCmd::new("npm ci", "npm");
                     cmd.arg("ci");
                     cmd.exec().await?;
                 }

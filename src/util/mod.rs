@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, future::Future};
+use std::{ffi::OsStr, fmt::Display, future::Future};
 
 use anyhow::Result;
 use tokio::process::Command;
@@ -20,11 +20,11 @@ pub(crate) struct PrettyCmd {
 }
 
 impl PrettyCmd {
-    pub fn new(description: String, command: String) -> Self {
-        let mut c = Command::new(command);
+    pub fn new(description: impl Display, command: impl AsRef<str>) -> Self {
+        let mut c = Command::new(command.as_ref());
         c.kill_on_drop(true);
         Self {
-            description,
+            description: description.to_string(),
             inner: c,
         }
     }
