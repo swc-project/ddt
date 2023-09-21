@@ -7,6 +7,17 @@ use tracing::debug;
 
 use crate::util::{wrap, PrettyCmd};
 
+static GIT_DIFF_ARGS: &[&str] = &[
+    "--binary",          // support binary files
+    "--unified=0",       // do not add lines around diff for consistent behaviour
+    "--no-color",        // disable colors for consistent behaviour
+    "--no-ext-diff",     // disable external diff tools for consistent behaviour
+    "--src-prefix=a/",   // force prefix for consistent behaviour
+    "--dst-prefix=b/",   // force prefix for consistent behaviour
+    "--patch",           // output a patch that can be applied
+    "--submodule=short", // always use the default short format for submodules
+];
+
 /// Utility for git hooks, which cannot use commands like `git add`.
 #[derive(Debug)]
 pub struct GitWorkflow {
