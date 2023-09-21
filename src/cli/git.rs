@@ -82,6 +82,9 @@ impl ResolveLockfileConflictCommand {
             let b_path = &self.args[2];
             let file_name = &self.args[4];
 
+            let original_file_content = fs::read(&file_name)
+                .await
+                .context("failed to store ancestor data")?;
             let lockfile_type = LockfileType::from_suffix(file_name)?;
 
             for path in &[ancestor_path, a_path, b_path] {
@@ -124,9 +127,13 @@ impl ResolveLockfileConflictCommand {
                 }
             }
 
-            fs::copy(&file_name, a_path)
+            fs::rename(&file_name, a_path)
                 .await
-                .context("failed to copy the result as `a` file")?;
+                .context("failed to rename the result as `a` file")?;
+
+            fs::write(&file_name, &original_file_content)
+                .await
+                .context("failed to restore the ancestor")?;
 
             Ok(())
         })
