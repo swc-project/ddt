@@ -2,6 +2,9 @@
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Context, Result};
+use once_cell::sync::Lazy;
+use rayon::vec;
+use regex::Regex;
 use tokio::fs;
 use tracing::debug;
 
@@ -47,7 +50,29 @@ impl GitWorkflow {
             .context("failed to get partially staged files")
     }
 
-    async fn get_partially_staged_files_inner(self: Arc<Self>) -> Result<Vec<String>> {}
+    async fn get_partially_staged_files_inner(self: Arc<Self>) -> Result<Vec<String>> {
+        static SPLIT_RE: Lazy<Regex> =
+            Lazy::new(|| Regex::new("\x00(?=[ AMDRCU?!]{2} |$)").unwrap());
+
+        debug!("Getting partially staged files...");
+
+        let status = self.exec_git(vec!["status".into(), "-z".into()]).await?;
+
+        let res = SPLIT_RE
+            .captures_iter(&status)
+            .filter(|line| {
+                let index = line.get(0).expect("index should exist").as_str();
+                let working_tree = line.get(1).expect("working tree should exist").as_str();
+
+                index != " " && working_tree != " " && index != "?" && working_tree != "?"
+            })
+            .map(|l| l.get(0).expect("index should exist").as_str()[3..].to_string())
+            .collect::<Vec<_>>();
+
+        debug!("Found partially staged files: {res:?}");
+
+        Ok(res)
+    }
 
     /// Create a diff of partially staged files and backup stash if enabled.
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
@@ -64,9 +89,10 @@ impl GitWorkflow {
 
         if !partially_staged_files.is_empty() {
             let unstage_patch = self
+                .clone()
                 .get_hidden_filepath(PATCH_UNSTAGED)
                 .context("failed to get the path for the unstage patch file")?;
-            let files = process_renames(partially_staged_files, true);
+            let files = process_renames(&partially_staged_files, true);
 
             let mut args = vec![String::from("diff")];
             args.extend(GIT_DIFF_ARGS.iter().map(|v| v.to_string()));
@@ -82,7 +108,7 @@ impl GitWorkflow {
         // TODO: https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/gitWorkflow.js#L210-L229
 
         Ok(PrepareResult {
-            partially_staged_files,
+            partially_staged_files: Arc::new(partially_staged_files),
         })
     }
 
@@ -251,7 +277,7 @@ impl GitWorkflow {
         Ok(output)
     }
 
-    fn get_hidden_filepath(&self, filename: &str) -> Result<PathBuf> {
+    fn get_hidden_filepath(self: Arc<Self>, filename: &str) -> Result<PathBuf> {
         self.git_config_dir
             .join(filename)
             .canonicalize()
