@@ -152,6 +152,7 @@ impl GitWorkflow {
 
     async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<()> {
         PrettyCmd::new("Running git command", "git")
+            .dir(&*self.git_dir)
             .args(args)
             .exec()
             .await

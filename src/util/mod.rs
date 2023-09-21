@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, fmt::Display, future::Future};
+use std::{ffi::OsStr, fmt::Display, future::Future, path::Path};
 
 use anyhow::Result;
 use tokio::process::Command;
@@ -39,6 +39,11 @@ impl PrettyCmd {
         E: AsRef<OsStr>,
     {
         self.inner.args(arg);
+        self
+    }
+
+    pub fn dir(&mut self, dir: impl AsRef<Path>) -> &mut Self {
+        self.inner.current_dir(dir);
         self
     }
 
