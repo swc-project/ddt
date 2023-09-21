@@ -143,7 +143,20 @@ impl GitWorkflow {
         self.cleanup_inner().await
     }
 
-    async fn cleanup_inner(self: Arc<Self>) -> Result<()> {}
+    async fn cleanup_inner(self: Arc<Self>) -> Result<()> {
+        debug!("Dropping backup stash...");
+
+        let backup_stash = self.get_backup_stash().await?;
+        let args = vec![
+            String::from("stash"),
+            "drop".into(),
+            "--quiet".into(),
+            backup_stash,
+        ];
+        self.exec_git(args).await?;
+
+        debug!("Done dropping backup stash!")
+    }
 
     #[tracing::instrument(name = "GitWorkflow::exec_git", skip_all)]
     async fn exec_git(self: Arc<Self>, args: Vec<String>) -> Result<()> {
