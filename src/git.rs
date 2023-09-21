@@ -1,7 +1,7 @@
 //! Utils for interacting with git.
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use tracing::debug;
 
 use crate::util::wrap;
@@ -94,6 +94,33 @@ impl GitWorkflow {
 
     async fn apply_modifications_inner(self: Arc<Self>) -> Result<()> {
         debug!("Adding task modifications to index...");
+
+        // `matchedFileChunks` includes staged files that lint-staged originally
+        // detected and matched against a task. Add only these files so any
+        // 3rd-party edits to other files won't be included in the commit. These
+        // additions per chunk are run "serially" to prevent race conditions.
+        // Git add creates a lockfile in the repo causing concurrent operations to fail.
+        // for (const files of this.matchedFileChunks) {
+        //     await this.execGit(['add', '--', ...files])
+        //   }
+        for files in self.matched_file_chunks.iter() {
+            let mut args = vec![String::from("add"), "--".into()];
+            args.extend(files.iter().cloned());
+            self.exec_git(args).await?;
+        }
+
+        debug!("Done adding task modifications to index!");
+
+        let staged_files_after_add = self
+            .exec_git(get_diff_command(self.diff, self.diffFilter))
+            .await;
+        if !staged_files_after_add && !self.allowEmpty {
+            // Tasks reverted all staged changes and the commit would be empty
+            // Throw error to stop commit unless `--allow-empty` was used
+            bail!("Prevented an empty git commit!")
+        }
+
+        Ok(())
     }
 
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
