@@ -37,6 +37,18 @@ pub struct PrepareResult {
 
 /// Methods ported from lint-staged.
 impl GitWorkflow {
+    /// Get a list of all files with both staged and unstaged modifications.
+    /// Renames have special treatment, since the single status line includes
+    /// both the "from" and "to" filenames, where "from" is no longer on disk.
+    #[tracing::instrument(name = "GitWorkflow::get_partially_staged_files", skip_all)]
+    pub async fn get_partially_staged_files(self: Arc<Self>) -> Result<PrepareResult> {
+        wrap(async move { self.get_partially_staged_files().await })
+            .await
+            .context("failed to get partially staged files")
+    }
+
+    async fn get_partially_staged_files_inner(self: Arc<Self>) -> Result<PrepareResult> {}
+
     /// Create a diff of partially staged files and backup stash if enabled.
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
     pub async fn prepare(self: Arc<Self>) -> Result<PrepareResult> {
@@ -133,7 +145,7 @@ impl GitWorkflow {
 
         let staged_files_after_add = self
             .exec_git(get_diff_command(self.diff, self.diffFilter))
-            .await;
+            .await?;
         if !staged_files_after_add && !self.allowEmpty {
             // Tasks reverted all staged changes and the commit would be empty
             // Throw error to stop commit unless `--allow-empty` was used
