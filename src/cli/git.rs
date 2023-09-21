@@ -36,6 +36,17 @@ struct ResolveLockfileConflictCommand {
 impl ResolveLockfileConflictCommand {
     pub async fn run(self) -> Result<()> {
         wrap(async move {
+            if self.args.len() != 5 {
+                bail!(
+                    "The ddt-lockfile merge driver expects 5 arguments. Please ensure that you \
+                     configured git driver properly. It should be
+
+
+                    driver = ddt git resolve-lockfile-conflict %O %A %B %L %P
+                     "
+                )
+            }
+
             // TODO
 
             dbg!(&self.args);

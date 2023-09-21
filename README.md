@@ -23,7 +23,7 @@ Add a custom merge driver to your **global** gitconfig file. (Typically `~/.gitc
 ```gitconfig
 [merge "ddt-lockfile"]
 	name = A custom merge driver used to resolve conflicts in lockfiles automatically
-	driver = ddt git resolve-lockfile-conflict %O %A %B
+	driver = ddt git resolve-lockfile-conflict  %O %A %B %L %P
 
 ```
 
