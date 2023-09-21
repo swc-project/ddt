@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 //! Utils for interacting with git.
 use std::{path::PathBuf, sync::Arc};
 
@@ -28,6 +30,10 @@ static GIT_DIFF_ARGS: &[&str] = &[
 static GIT_APPLY_ARGS: &[&str] = &["-v", "--whitespace=nowarn", "--recount", "--unidiff-zero"];
 
 /// Utility for git hooks, which cannot use commands like `git add`.
+///
+/// Any modification of the files in staging area (from hook) **must** be done
+/// in the git workflow.
+
 #[derive(Debug)]
 pub struct GitWorkflow {
     matched_file_chunks: Arc<Vec<Vec<String>>>,
@@ -58,14 +64,6 @@ pub struct MergeStatus {
 const MERGE_HEAD: &str = "MERGE_HEAD";
 const MERGE_MODE: &str = "MERGE_MODE";
 const MERGE_MSG: &str = "MERGE_MSG";
-
-impl GitWorkflow {
-    /// Run fut in the context of git workflow.
-    ///
-    /// Any modification of the files in staging area **must** be done in the
-    /// `fut`.
-    pub async fn run(self: Arc<Self>, fut: impl Future<Output = Result<()>>) -> Result<()> {}
-}
 
 /// Methods ported from lint-staged.
 impl GitWorkflow {
