@@ -40,6 +40,24 @@ pub struct PrepareResult {
 
 /// Methods ported from lint-staged.
 impl GitWorkflow {
+    #[tracing::instrument(name = "GitWorkflow::backup_merge_status", skip_all)]
+    pub async fn backup_merge_status(self: Arc<Self>) -> Result<()> {
+        wrap(async move { self.backup_merge_status_inner().await })
+            .await
+            .context("failed to backup merge status")
+    }
+
+    async fn backup_merge_status_inner(self: Arc<Self>) -> Result<()> {}
+
+    #[tracing::instrument(name = "GitWorkflow::restore_merge_status", skip_all)]
+    pub async fn restore_merge_status(self: Arc<Self>) -> Result<()> {
+        wrap(async move { self.restore_merge_status_inner().await })
+            .await
+            .context("failed to backup merge status")
+    }
+
+    async fn restore_merge_status_inner(self: Arc<Self>) -> Result<()> {}
+
     /// Get a list of all files with both staged and unstaged modifications.
     /// Renames have special treatment, since the single status line includes
     /// both the "from" and "to" filenames, where "from" is no longer on disk.
@@ -85,7 +103,7 @@ impl GitWorkflow {
     async fn prepare_inner(self: Arc<Self>) -> Result<PrepareResult> {
         debug!("Backing up original state...");
 
-        let partially_staged_files = self.get_partially_staged_files().await?;
+        let partially_staged_files = self.clone().get_partially_staged_files().await?;
 
         if !partially_staged_files.is_empty() {
             let unstage_patch = self
