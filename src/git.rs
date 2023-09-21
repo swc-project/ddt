@@ -41,13 +41,13 @@ impl GitWorkflow {
     /// Renames have special treatment, since the single status line includes
     /// both the "from" and "to" filenames, where "from" is no longer on disk.
     #[tracing::instrument(name = "GitWorkflow::get_partially_staged_files", skip_all)]
-    pub async fn get_partially_staged_files(self: Arc<Self>) -> Result<PrepareResult> {
+    pub async fn get_partially_staged_files(self: Arc<Self>) -> Result<Vec<String>> {
         wrap(async move { self.get_partially_staged_files_inner().await })
             .await
             .context("failed to get partially staged files")
     }
 
-    async fn get_partially_staged_files_inner(self: Arc<Self>) -> Result<PrepareResult> {}
+    async fn get_partially_staged_files_inner(self: Arc<Self>) -> Result<Vec<String>> {}
 
     /// Create a diff of partially staged files and backup stash if enabled.
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
