@@ -126,21 +126,27 @@ impl GitWorkflow {
 
     #[tracing::instrument(name = "GitWorkflow::restore_unstaged_changes", skip_all)]
     pub async fn restore_unstaged_changes(self: Arc<Self>) -> Result<()> {
-        self.restore_unstaged_changes_inner().await
+        wrap(async move { self.restore_unstaged_changes_inner().await })
+            .await
+            .context("failed to restore unstaged changes")
     }
 
     async fn restore_unstaged_changes_inner(self: Arc<Self>) -> Result<()> {}
 
     #[tracing::instrument(name = "GitWorkflow::restore_original_state", skip_all)]
     pub async fn restore_original_state(self: Arc<Self>) -> Result<()> {
-        self.restore_original_state_inner().await
+        wrap(async move { self.restore_original_state_inner().await })
+            .await
+            .context("failed to restore original state")
     }
 
     async fn restore_original_state_inner(self: Arc<Self>) -> Result<()> {}
 
     #[tracing::instrument(name = "GitWorkflow::cleanup", skip_all)]
     pub async fn cleanup(self: Arc<Self>) -> Result<()> {
-        self.cleanup_inner().await
+        wrap(async move { self.cleanup_inner().await })
+            .await
+            .context("failed to cleanup")
     }
 
     async fn cleanup_inner(self: Arc<Self>) -> Result<()> {
