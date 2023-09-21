@@ -6,7 +6,7 @@ use futures::try_join;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use tokio::fs;
-use tracing::debug;
+use tracing::{debug, info, warn};
 
 use crate::util::{wrap, PrettyCmd};
 
@@ -24,6 +24,8 @@ static GIT_DIFF_ARGS: &[&str] = &[
     "--patch",           // output a patch that can be applied
     "--submodule=short", // always use the default short format for submodules
 ];
+
+static GIT_APPLY_ARGS: &[&str] = &["-v", "--whitespace=nowarn", "--recount", "--unidiff-zero"];
 
 /// Utility for git hooks, which cannot use commands like `git add`.
 #[derive(Debug)]
@@ -260,16 +262,53 @@ impl GitWorkflow {
             .context("failed to restore unstaged changes")
     }
 
-    async fn restore_unstaged_changes_inner(self: Arc<Self>) -> Result<()> {}
+    async fn restore_unstaged_changes_inner(self: Arc<Self>) -> Result<()> {
+        debug!("Restoring unstaged changes...");
+
+        let unstaged_patch = self.get_hidden_filepath(PATCH_UNSTAGED)?;
+
+        let result = {
+            let mut args = vec!["apply".into()];
+            args.extend(GIT_APPLY_ARGS.iter().map(|v| v.to_string()));
+            args.push(unstaged_patch.display().to_string());
+            self.clone().exec_git(args).await
+        };
+
+        match result {
+            Ok(_) => return Ok(()),
+            Err(err) => {
+                warn!("Error while restoring changes:'{:?}'", err);
+                info!("Retrying with 3-way merge");
+
+                let result = {
+                    let mut args = vec!["apply".into()];
+                    args.extend(GIT_APPLY_ARGS.iter().map(|v| v.to_string()));
+                    args.push("--3way".into());
+                    args.push(unstaged_patch.display().to_string());
+                    self.exec_git(args).await
+                };
+
+                match result {
+                    Ok(_) => Ok(()),
+                    Err(_) => Err(err.context(
+                        "Unstaged changes could not be restored due to a merge conflict!",
+                    )),
+                }
+            }
+        }
+    }
 
     #[tracing::instrument(name = "GitWorkflow::restore_original_state", skip_all)]
-    pub async fn restore_original_state(self: Arc<Self>) -> Result<()> {
-        wrap(async move { self.restore_original_state_inner().await })
+    pub async fn restore_original_state(self: Arc<Self>, merge_status: MergeStatus) -> Result<()> {
+        wrap(async move { self.restore_original_state_inner(merge_status).await })
             .await
             .context("failed to restore original state")
     }
 
-    async fn restore_original_state_inner(self: Arc<Self>) -> Result<()> {
+    async fn restore_original_state_inner(
+        self: Arc<Self>,
+        merge_status: MergeStatus,
+    ) -> Result<()> {
         debug!("Restoring original state...");
 
         self.clone()
@@ -291,7 +330,7 @@ impl GitWorkflow {
         }
 
         // Restore meta information about ongoing git merge
-        self.clone().restore_merge_status().await?;
+        self.clone().restore_merge_status(merge_status).await?;
 
         // If stashing resurrected deleted files, clean them out
 
@@ -351,7 +390,7 @@ impl GitWorkflow {
         Ok(output)
     }
 
-    fn get_hidden_filepath(self: Arc<Self>, filename: &str) -> Result<PathBuf> {
+    fn get_hidden_filepath(&self, filename: &str) -> Result<PathBuf> {
         self.git_config_dir
             .join(filename)
             .canonicalize()
