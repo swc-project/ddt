@@ -48,9 +48,9 @@ pub struct PrepareResult {
 
 #[derive(Debug, Clone)]
 pub struct MergeStatus {
-    header: Vec<u8>,
-    mode: Vec<u8>,
-    msg: Vec<u8>,
+    header: Option<Vec<u8>>,
+    mode: Option<Vec<u8>>,
+    msg: Option<Vec<u8>>,
 }
 
 /// Methods ported from lint-staged.
@@ -74,17 +74,39 @@ impl GitWorkflow {
 
         debug!("Done backing up merge state!");
 
-        Ok(MergeStatus { header, mode, msg })
+        Ok(MergeStatus {
+            header: Some(header),
+            mode: Some(mode),
+            msg: Some(msg),
+        })
     }
 
     #[tracing::instrument(name = "GitWorkflow::restore_merge_status", skip_all)]
-    pub async fn restore_merge_status(self: Arc<Self>) -> Result<()> {
-        wrap(async move { self.restore_merge_status_inner().await })
+    pub async fn restore_merge_status(self: Arc<Self>, status: MergeStatus) -> Result<()> {
+        wrap(async move { self.restore_merge_status_inner(status).await })
             .await
-            .context("failed to backup merge status")
+            .context("failed to restore merge status")
     }
 
-    async fn restore_merge_status_inner(self: Arc<Self>) -> Result<()> {}
+    async fn restore_merge_status_inner(self: Arc<Self>, status: MergeStatus) -> Result<()> {
+        async fn w(path: PathBuf, content: Option<Vec<u8>>) -> Result<()> {
+            if let Some(content) = content {
+                fs::write(path, content)
+                    .await
+                    .context("failed to write merge status file")?;
+            }
+
+            Ok(())
+        }
+
+        try_join!(
+            w(self.merge_head_filename.clone(), status.header),
+            w(self.merge_mode_filename.clone(), status.mode),
+            w(self.merge_msg_filename.clone(), status.msg),
+        );
+
+        Ok(())
+    }
 
     /// Get a list of all files with both staged and unstaged modifications.
     /// Renames have special treatment, since the single status line includes
