@@ -59,15 +59,25 @@ impl GitWorkflow {
         self: Arc<Self>,
         partially_staged_files: Arc<Vec<String>>,
     ) -> Result<()> {
-        wrap(async move { self.hide_unstaged_changes_inner().await })
-            .await
-            .context("failed to hide unstaged changes")
+        wrap(async move {
+            self.hide_unstaged_changes_inner(partially_staged_files)
+                .await
+        })
+        .await
+        .context("failed to hide unstaged changes")
     }
 
     async fn hide_unstaged_changes_inner(
         self: Arc<Self>,
         partially_staged_files: Arc<Vec<String>>,
     ) -> Result<()> {
+        let files = process_renames(partially_staged_files, false).await?;
+
+        let mut args = vec![String::from("checkout"), "--force".into(), "--".into()];
+        args.extend(files);
+        self.exec_git(args).await?;
+
+        Ok(())
     }
 
     #[tracing::instrument(name = "GitWorkflow::prepare", skip_all)]
