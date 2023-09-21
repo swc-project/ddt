@@ -161,7 +161,9 @@ impl GitWorkflow {
         ];
         self.exec_git(args).await?;
 
-        debug!("Done dropping backup stash!")
+        debug!("Done dropping backup stash!");
+
+        Ok(())
     }
 
     #[tracing::instrument(name = "GitWorkflow::exec_git", skip_all)]
