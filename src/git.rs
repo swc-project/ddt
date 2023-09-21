@@ -2,6 +2,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Context, Result};
+use futures::try_join;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use tokio::fs;
@@ -34,19 +35,39 @@ pub struct GitWorkflow {
 
 #[derive(Debug, Clone)]
 pub struct PrepareResult {
-    pub partially_staged_files: Arc<Vec<String>>,
+    partially_staged_files: Arc<Vec<String>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MergeStatus {
+    header: Vec<u8>,
+    mode: Vec<u8>,
+    msg: Vec<u8>,
 }
 
 /// Methods ported from lint-staged.
 impl GitWorkflow {
     #[tracing::instrument(name = "GitWorkflow::backup_merge_status", skip_all)]
-    pub async fn backup_merge_status(self: Arc<Self>) -> Result<()> {
+    pub async fn backup_merge_status(self: Arc<Self>) -> Result<MergeStatus> {
         wrap(async move { self.backup_merge_status_inner().await })
             .await
             .context("failed to backup merge status")
     }
 
-    async fn backup_merge_status_inner(self: Arc<Self>) -> Result<()> {}
+    async fn backup_merge_status_inner(self: Arc<Self>) -> Result<MergeStatus> {
+        debug!("Backing up merge state...");
+
+        let (header, mode, msg) = try_join!(
+            fs::read(&*self.mergeHeadFilename),
+            fs::read(&*self.mergeModeFilename),
+            fs::read(&*self.mergeMsgFilename)
+        )
+        .await?;
+
+        debug!("Done backing up merge state!");
+
+        Ok(MergeStatus { header, mode, msg })
+    }
 
     #[tracing::instrument(name = "GitWorkflow::restore_merge_status", skip_all)]
     pub async fn restore_merge_status(self: Arc<Self>) -> Result<()> {
