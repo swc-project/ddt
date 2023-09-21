@@ -1,25 +1,12 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use tracing::info;
 
-use crate::cli::{CleanCommand, ExtraCommand, SolveVersionsCommand};
+use crate::cli::CliArgs;
 
 mod cli;
 mod semver;
 mod util;
-
-#[derive(Debug, Parser)]
-struct CliArgs {
-    #[clap(subcommand)]
-    cmd: Command,
-}
-
-#[derive(Debug, Subcommand)]
-enum Command {
-    X(ExtraCommand),
-    Clean(CleanCommand),
-    SolveVersions(SolveVersionsCommand),
-}
 
 #[tokio::main]
 
@@ -37,17 +24,7 @@ async fn main() -> Result<()> {
 
     info!("Start");
 
-    match args.cmd {
-        Command::Clean(cmd) => {
-            cmd.run().await?;
-        }
-        Command::SolveVersions(cmd) => {
-            cmd.run().await?;
-        }
-        Command::X(cmd) => {
-            cmd.run().await?;
-        }
-    }
+    args.run().await?;
 
     info!("End in {:?}", start.elapsed());
 

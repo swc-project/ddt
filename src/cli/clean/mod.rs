@@ -38,7 +38,7 @@ pub(crate) struct CleanCommand {
 }
 
 impl CleanCommand {
-    pub async fn run(&self) -> Result<()> {
+    pub async fn run(self) -> Result<()> {
         let git_projects = find_git_projects(&self.dir)
             .await
             .with_context(|| format!("failed to find git projects from {}", self.dir.display()))?;
