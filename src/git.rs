@@ -22,7 +22,24 @@ impl GitWorkflow {
         wrap(async move {
             debug!("Backing up original state...");
 
-            let partiallyStagedFiles = self.getPartiallyStagedFiles().await?;
+            let partially_staged_files = self.getPartiallyStagedFiles().await?;
+
+            if !partially_staged_files.is_empty() {
+                let unstage_patch = self.getHiddenFilepath(PATCH_UNSTAGED);
+                let files = process_renames(partially_staged_files);
+
+                let mut args = vec![String::from("diff")];
+                args.extend(GIT_DIFF_ARGS);
+                args.push("--output".into());
+
+                args.push(unstage_patch);
+                args.push("--".into());
+                args.extend(files);
+
+                self.exec_git(args).await?;
+            }
+
+            // TODO: https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/gitWorkflow.js#L210-L229
         })
         .await
     }
