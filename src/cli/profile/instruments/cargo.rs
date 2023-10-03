@@ -1,16 +1,8 @@
-use std::path::PathBuf;
-
 use anyhow::{Context, Result};
 use clap::Args;
 
 use super::run::RunCommand;
-use crate::{
-    cli::profile::instruments::{
-        launch_instruments,
-        util::{profile_target, CmdArgs, XcodeInstruments},
-    },
-    util::wrap,
-};
+use crate::cli::profile::instruments::util::XcodeInstruments;
 
 /// Invoke a binary file under the `instruments` tool.
 #[derive(Debug, Clone, Args)]
@@ -36,6 +28,8 @@ impl CargoCommand {
             args: self.args,
         };
 
-        cmd.run(xctrace_tool).await
+        cmd.run(xctrace_tool)
+            .await
+            .context("failed to run `ddt profile instruments run` with the built binary")
     }
 }

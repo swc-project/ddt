@@ -30,6 +30,7 @@ impl InstrumentsCommand {
             match self.cmd {
                 Inner::ListTemplates(cmd) => cmd.run(xctrace_tool).await,
                 Inner::Run(cmd) => cmd.run(xctrace_tool).await,
+                Inner::Cargo(cmd) => cmd.run(xctrace_tool).await,
             }
         })
         .await

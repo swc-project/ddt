@@ -23,6 +23,10 @@ pub(super) struct RunCommand {
     #[clap(long)]
     pub time_limit: Option<usize>,
 
+    /// The path to the output trace file
+    #[clap(long, short = 'o')]
+    pub output_path: Option<PathBuf>,
+
     #[clap(long)]
     pub no_open: bool,
 
@@ -42,6 +46,7 @@ impl RunCommand {
                     args: self.args.clone(),
                     template_name: self.template.clone(),
                     time_limit: self.time_limit,
+                    output_path: self.output_path,
                 },
             )
             .context("failed to profile target binary")?;
