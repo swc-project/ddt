@@ -16,6 +16,7 @@ async-recursion = "1.0.5"
 async-trait = "0.1.73"
 auto_impl = "1.1.0"
 cargo_metadata = "0.15.2"
+chrono = "0.4.31"
 clap = { version = "4.0.29", features = ["derive"] }
 crates-index = { version = "2.1.1", features = ["git"] }
 futures = "0.3.25"
