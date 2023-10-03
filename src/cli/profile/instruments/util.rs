@@ -3,7 +3,7 @@
 //! interfacing with the `instruments` command line tool
 
 use std::{
-    fs, mem,
+    mem,
     path::{Path, PathBuf},
     process::{Command, Output},
 };
