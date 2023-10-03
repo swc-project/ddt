@@ -3,7 +3,7 @@
 //! interfacing with the `instruments` command line tool
 
 use std::{
-    fs,
+    fs, mem,
     path::{Path, PathBuf},
     process::{Command, Output},
 };
@@ -92,7 +92,7 @@ impl XcodeInstruments {
     fn profiling_command(
         &self,
         template_name: &str,
-        trace_filepath: &Path,
+        trace_file_path: &Path,
         time_limit: Option<usize>,
     ) -> Result<Command> {
         match self {
@@ -107,7 +107,7 @@ impl XcodeInstruments {
                     command.args(&["--time-limit", &limit_millis_str]);
                 }
 
-                command.args(&["--output", trace_filepath.to_str().unwrap()]);
+                command.args(&["--output", trace_file_path.to_str().unwrap()]);
                 // redirect stdin & err to the user's terminal
                 if let Some(tty) = get_tty()? {
                     command.args(&["--target-stdin", &tty, "--target-stdout", &tty]);
@@ -120,7 +120,7 @@ impl XcodeInstruments {
                 let mut command = Command::new("instruments");
                 command.args(&["-t", template_name]);
 
-                command.arg("-D").arg(&trace_filepath);
+                command.arg("-D").arg(&trace_file_path);
 
                 if let Some(limit) = time_limit {
                     command.args(&["-l", &limit.to_string()]);
@@ -404,14 +404,8 @@ pub fn render_template_catalog(catalog: &TemplateCatalog) -> String {
 fn prepare_trace_filepath(
     target_filepath: &Path,
     template_name: &str,
-    workspace_root: &Path,
-) -> Result<PathBuf> {
-    let trace_dir = workspace_root.join("target").join("instruments");
-
-    if !trace_dir.exists() {
-        fs::create_dir_all(&trace_dir)
-            .map_err(|e| anyhow!("failed to create {:?}: {}", &trace_dir, e))?;
-    }
+) -> Result<(tempfile::TempDir, PathBuf)> {
+    let trace_dir = tempfile::TempDir::new()?;
 
     let trace_filename = {
         let target_shortname = target_filepath
@@ -429,9 +423,9 @@ fn prepare_trace_filepath(
         )
     };
 
-    let trace_filepath = trace_dir.join(trace_filename);
+    let trace_filepath = trace_dir.path().join(trace_filename);
 
-    Ok(trace_filepath)
+    Ok((trace_dir, trace_filepath))
 }
 
 /// Return the complete template name, replacing abbreviation if provided.
@@ -458,7 +452,7 @@ fn abbrev_name(template_name: &str) -> Option<&str> {
 
 /// Profile the target binary at `binary_filepath`, write results at
 /// `trace_filepath` and returns its path.
-pub(crate) fn profile_target(
+pub(super) fn profile_target(
     target_filepath: &Path,
     xctrace_tool: &XcodeInstruments,
     cmd: &CmdArgs,
@@ -470,8 +464,7 @@ pub(crate) fn profile_target(
     let template_name = resolve_template_name(&cmd.template_name);
 
     // 2. Compute the trace filepath and create its parent directory
-    let trace_filepath =
-        prepare_trace_filepath(target_filepath, template_name, workspace_root.as_path())?;
+    let (trace_dir, trace_file_path) = prepare_trace_filepath(target_filepath, template_name)?;
 
     // 3. Print current activity `Profiling target/debug/tries`
     info!(
@@ -481,12 +474,12 @@ pub(crate) fn profile_target(
     );
 
     let mut command =
-        xctrace_tool.profiling_command(template_name, &trace_filepath, cmd.time_limit)?;
+        xctrace_tool.profiling_command(template_name, &trace_file_path, cmd.time_limit)?;
 
     command.arg(&target_filepath);
 
     if !cmd.args.is_empty() {
-        command.args(cmd.args);
+        command.args(&cmd.args);
     }
 
     eprintln!("Running {:?}", command);
@@ -499,7 +492,11 @@ pub(crate) fn profile_target(
         return Err(anyhow!("instruments errored: {}", stderr));
     }
 
-    Ok(trace_filepath)
+    info!("Trace file written to {:?}", trace_file_path);
+    // Don't delete the trace file.
+    mem::forget(trace_dir);
+
+    Ok(trace_file_path)
 }
 
 /// get the tty of th current terminal session
