@@ -9,20 +9,41 @@ use crate::{
 };
 
 /// Invoke a binary file under the `instruments` tool.
-#[derive(Debug, Args)]
+#[derive(Debug, Clone, Args)]
 pub(super) struct RunCommand {
     pub bin: PathBuf,
+
+    #[clap(long, short = 't')]
+    pub template: String,
+
+    #[clap(long)]
+    pub time_limit: Option<usize>,
+
+    #[clap(long)]
+    pub no_open: bool,
 
     pub args: Vec<String>,
 }
 
 impl RunCommand {
     pub async fn run(self) -> Result<()> {
+        let c = self.clone();
+
         wrap(async move {
             let xctrace_tool = XcodeInstruments::detect().context("failed to detect xctrace")?;
 
-            profile_target(&self.bin, &xctrace_tool, &CmdArgs {})
-                .context("failed to run instruments");
+            let trace_file_path = profile_target(
+                &self.bin,
+                &xctrace_tool,
+                &CmdArgs {
+                    args: self.args.clone(),
+                    template_name: self.template.clone(),
+                    time_limit: self.time_limit,
+                },
+            )
+            .context("failed to run instruments")?;
+
+            if !self.no_open {}
 
             bail!("not implemented")
         })
@@ -30,8 +51,8 @@ impl RunCommand {
         .with_context(|| {
             format!(
                 "failed to run instruments with `{}` `{:?}",
-                self.bin.display(),
-                self.args
+                c.bin.display(),
+                c.args
             )
         })
     }
