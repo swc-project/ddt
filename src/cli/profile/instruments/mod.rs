@@ -3,7 +3,10 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 
-use self::{list_templates::ListTemplatesCommand, run::RunCommand, util::XcodeInstruments};
+use self::{
+    cargo::CargoCommand, list_templates::ListTemplatesCommand, run::RunCommand,
+    util::XcodeInstruments,
+};
 use crate::util::wrap;
 
 mod cargo;
@@ -38,6 +41,7 @@ impl InstrumentsCommand {
 enum Inner {
     Run(RunCommand),
     ListTemplates(ListTemplatesCommand),
+    Cargo(CargoCommand),
 }
 
 /// Launch Xcode Instruments on the provided trace file.
