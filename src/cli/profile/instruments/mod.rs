@@ -4,6 +4,7 @@ use clap::{Args, Subcommand};
 use crate::util::wrap;
 
 mod run;
+mod util;
 
 /// Invokes `instruments` from xcode. Works only on macOS.
 #[derive(Debug, Args)]
