@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use clap::Args;
 
 use super::run::RunCommand;
-use crate::cli::profile::instruments::util::XcodeInstruments;
+use crate::{cli::profile::instruments::util::XcodeInstruments, util::wrap};
 
 /// Invoke a binary file under the `instruments` tool.
 #[derive(Debug, Clone, Args)]
@@ -21,12 +21,16 @@ pub(super) struct CargoCommand {
 
 impl CargoCommand {
     pub async fn run(self, xctrace_tool: XcodeInstruments) -> Result<()> {
-        let cmd = RunCommand {
-            template: self.template,
-            time_limit: self.time_limit,
-            no_open: self.no_open,
-            args: self.args,
-        };
+        let cmd = wrap(async move {
+            RunCommand {
+                template: self.template,
+                time_limit: self.time_limit,
+                no_open: self.no_open,
+                args: self.args,
+            }
+        })
+        .await
+        .context("failed to build the target binary using cargo")?;
 
         cmd.run(xctrace_tool)
             .await
