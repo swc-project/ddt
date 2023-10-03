@@ -3,19 +3,16 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 
-use self::{run::RunCommand, util::XcodeInstruments};
-use crate::{cli::profile::instruments::util::render_template_catalog, util::wrap};
+use self::{list_templates::ListTemplatesCommand, run::RunCommand, util::XcodeInstruments};
+use crate::util::wrap;
 
+mod list_templates;
 mod run;
 mod util;
 
 /// Invokes `instruments` from xcode. Works only on macOS.
 #[derive(Debug, Args)]
 pub(super) struct InstrumentsCommand {
-    /// List available templates
-    #[clap(short = 'l', long)]
-    list_templates: bool,
-
     #[clap(subcommand)]
     cmd: Inner,
 }
@@ -26,14 +23,8 @@ impl InstrumentsCommand {
             // Detect the type of Xcode Instruments installation
             let xctrace_tool = XcodeInstruments::detect().context("failed to detect xctrace")?;
 
-            // Render available templates if the user asked
-            if self.list_templates {
-                let catalog = xctrace_tool.available_templates()?;
-                println!("{}", render_template_catalog(&catalog));
-                return Ok(());
-            }
-
             match self.cmd {
+                Inner::ListTemplates(cmd) => cmd.run(xctrace_tool).await,
                 Inner::Run(cmd) => cmd.run(xctrace_tool).await,
             }
         })
@@ -45,6 +36,7 @@ impl InstrumentsCommand {
 #[derive(Debug, Subcommand)]
 enum Inner {
     Run(RunCommand),
+    ListTemplates(ListTemplatesCommand),
 }
 
 /// Launch Xcode Instruments on the provided trace file.
