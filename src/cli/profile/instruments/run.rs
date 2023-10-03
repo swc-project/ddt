@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::Args;
 
 use crate::{
@@ -51,7 +51,7 @@ impl RunCommand {
                 launch_instruments(&trace_file_path)?;
             }
 
-            bail!("not implemented")
+            Ok(())
         })
         .await
         .with_context(|| {
