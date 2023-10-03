@@ -489,7 +489,8 @@ pub(super) fn profile_target(
     if !output.status.success() {
         let stderr =
             String::from_utf8(output.stderr).unwrap_or_else(|_| "failed to capture stderr".into());
-        return Err(anyhow!("instruments errored: {}", stderr));
+
+        eprintln!("instruments errored: {}", stderr);
     }
 
     info!("Trace file written to {:?}", trace_file_path);
