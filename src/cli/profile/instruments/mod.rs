@@ -6,6 +6,7 @@ use clap::{Args, Subcommand};
 use self::{list_templates::ListTemplatesCommand, run::RunCommand, util::XcodeInstruments};
 use crate::util::wrap;
 
+mod cargo;
 mod list_templates;
 mod run;
 mod util;
