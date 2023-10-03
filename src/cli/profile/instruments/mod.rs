@@ -1,7 +1,7 @@
-use anyhow::{bail, Context, Result};
+use anyhow::Result;
 use clap::{Args, Subcommand};
 
-use crate::util::wrap;
+use self::run::RunCommand;
 
 mod run;
 mod util;
@@ -24,20 +24,4 @@ impl InstrumentsCommand {
 #[derive(Debug, Subcommand)]
 enum Inner {
     Run(RunCommand),
-}
-
-/// Invoke a binary file under the `instruments` tool.
-#[derive(Debug, Args)]
-struct RunCommand {}
-
-impl RunCommand {
-    pub async fn run(self) -> Result<()> {
-        wrap(async move {
-            // TODO
-
-            bail!("not implemented")
-        })
-        .await
-        .context("failed to run instruments with a specified binary")
-    }
 }
