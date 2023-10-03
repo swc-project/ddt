@@ -1,9 +1,14 @@
+use std::path::Path;
+
 use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 
+use self::{list_templates::ListTemplatesCommand, run::RunCommand, util::XcodeInstruments};
 use crate::util::wrap;
 
+mod list_templates;
 mod run;
+mod util;
 
 /// Invokes `instruments` from xcode. Works only on macOS.
 #[derive(Debug, Args)]
@@ -14,29 +19,34 @@ pub(super) struct InstrumentsCommand {
 
 impl InstrumentsCommand {
     pub async fn run(self) -> Result<()> {
-        match self.cmd {
-            Inner::Run(cmd) => cmd.run().await,
-        }
+        wrap(async move {
+            // Detect the type of Xcode Instruments installation
+            let xctrace_tool = XcodeInstruments::detect().context("failed to detect xctrace")?;
+
+            match self.cmd {
+                Inner::ListTemplates(cmd) => cmd.run(xctrace_tool).await,
+                Inner::Run(cmd) => cmd.run(xctrace_tool).await,
+            }
+        })
+        .await
+        .context("failed to run instruments")
     }
 }
 
 #[derive(Debug, Subcommand)]
 enum Inner {
     Run(RunCommand),
+    ListTemplates(ListTemplatesCommand),
 }
 
-/// Invoke a binary file under the `instruments` tool.
-#[derive(Debug, Args)]
-struct RunCommand {}
+/// Launch Xcode Instruments on the provided trace file.
+fn launch_instruments(trace_filepath: &Path) -> Result<()> {
+    use std::process::Command;
 
-impl RunCommand {
-    pub async fn run(self) -> Result<()> {
-        wrap(async move {
-            // TODO
+    let status = Command::new("open").arg(trace_filepath).status()?;
 
-            bail!("not implemented")
-        })
-        .await
-        .context("failed to run instruments with a specified binary")
+    if !status.success() {
+        bail!("`open` failed")
     }
+    Ok(())
 }
