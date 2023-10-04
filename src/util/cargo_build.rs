@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use cargo_metadata::{ArtifactProfile, Message};
-use clap::{Args, Parser};
+use clap::Parser;
 use is_executable::IsExecutable;
 
 /// Built bin file.
@@ -54,16 +54,6 @@ pub struct CargoBuildTarget {
 
     #[clap(long = "package", short = 'p')]
     packages: Vec<String>,
-}
-
-impl CargoBuildTarget {
-    pub fn supports_release_flag(&self) -> bool {
-        self.tests || self.test.is_some() || self.examples || self.example.is_some()
-    }
-
-    pub fn args(&self) -> &[String] {
-        &self.target_args
-    }
 }
 
 /// Compile one or more targets.
@@ -205,11 +195,11 @@ pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
     Ok(binaries)
 }
 
-pub fn cargo_workspace() -> Result<PathBuf> {
+pub fn cargo_target_dir() -> Result<PathBuf> {
     let md = cargo_metadata::MetadataCommand::new()
         .no_deps()
         .exec()
         .context("cargo metadata failed")?;
 
-    Ok(md.workspace_root.to_path_buf().into())
+    Ok(md.target_directory.into())
 }

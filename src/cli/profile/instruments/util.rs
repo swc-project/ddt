@@ -419,25 +419,30 @@ fn prepare_trace_filepath(
 
     let trace_dir = tempfile::TempDir::new()?;
 
-    let trace_filename = {
-        let target_shortname = target_filepath
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .ok_or_else(|| anyhow!("invalid target path {:?}", target_filepath))?;
-        let template_name = template_name.replace(' ', "-");
-        let now = chrono::Local::now();
-
-        format!(
-            "{}_{}_{}.trace",
-            target_shortname,
-            template_name,
-            now.format("%F_%H%M%S-%3f")
-        )
-    };
+    let trace_filename = file_name_for_trace_file(target_filepath, template_name)?;
 
     let trace_filepath = trace_dir.path().join(trace_filename);
 
     Ok((Some(trace_dir), trace_filepath))
+}
+
+pub(super) fn file_name_for_trace_file(
+    target_filepath: &Path,
+    template_name: &str,
+) -> Result<String> {
+    let target_shortname = target_filepath
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| anyhow!("invalid target path {:?}", target_filepath))?;
+    let template_name = template_name.replace(' ', "-");
+    let now = chrono::Local::now();
+
+    Ok(format!(
+        "{}_{}_{}.trace",
+        target_shortname,
+        template_name,
+        now.format("%F_%H%M%S-%3f")
+    ))
 }
 
 /// Return the complete template name, replacing abbreviation if provided.
