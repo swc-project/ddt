@@ -8,7 +8,7 @@ use super::{run::RunCommand, util::file_name_for_trace_file};
 use crate::{
     cli::profile::instruments::util::XcodeInstruments,
     util::{
-        cargo_build::{cargo_target_dir, compile, CargoBuildTarget},
+        cargo_build::{cargo_target_dir, cargo_workspace_dir, compile, CargoBuildTarget},
         wrap,
     },
 };
@@ -49,7 +49,7 @@ impl CargoCommand {
                 bins.into_iter().next().unwrap()
             } else {
                 let items = bins
-                    .into_iter()
+                    .iter()
                     .map(|bin| bin.path.display().to_string())
                     .collect::<Vec<_>>();
 
@@ -72,7 +72,14 @@ impl CargoCommand {
                 envs.push((key.to_string(), value));
             };
 
-            add("CARGO_MANIFEST_DIR", bin.manifest_path);
+            add(
+                "CARGO_MANIFEST_DIR",
+                bin.manifest_path.to_string_lossy().to_string(),
+            );
+            add(
+                "CARGO_WORKSPACE_DIR",
+                cargo_workspace_dir()?.to_string_lossy().to_string(),
+            );
 
             Ok((
                 RunCommand {

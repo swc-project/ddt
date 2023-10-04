@@ -18,6 +18,8 @@ pub struct BinFile {
     /// `.dSYM`,
     pub extra_files: Vec<PathBuf>,
     pub profile: ArtifactProfile,
+
+    pub manifest_path: PathBuf,
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -160,6 +162,7 @@ pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
                         is_bench,
                         extra_files: artifact.filenames.into_iter().map(From::from).collect(),
                         profile: artifact.profile,
+                        manifest_path: artifact.manifest_path.into(),
                     });
                     continue;
                 }
@@ -202,4 +205,12 @@ pub fn cargo_target_dir() -> Result<PathBuf> {
         .context("cargo metadata failed")?;
 
     Ok(md.target_directory.into())
+}
+pub fn cargo_workspace_dir() -> Result<PathBuf> {
+    let md = cargo_metadata::MetadataCommand::new()
+        .no_deps()
+        .exec()
+        .context("cargo metadata failed")?;
+
+    Ok(md.workspace_root.into())
 }
