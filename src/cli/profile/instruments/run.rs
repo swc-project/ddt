@@ -34,7 +34,11 @@ pub(super) struct RunCommand {
 }
 
 impl RunCommand {
-    pub async fn run(self, xctrace_tool: XcodeInstruments) -> Result<()> {
+    pub async fn run(
+        self,
+        xctrace_tool: XcodeInstruments,
+        envs: Vec<(String, String)>,
+    ) -> Result<()> {
         let c = self.clone();
 
         wrap(async move {
