@@ -19,6 +19,7 @@ cargo_metadata = "0.15.2"
 chrono = "0.4.31"
 clap = { version = "4.0.29", features = ["derive"] }
 crates-index = { version = "2.1.1", features = ["git"] }
+dialoguer = { version = "0.11.0", features = ["completion"] }
 futures = "0.3.25"
 is_executable = "1.0.1"
 once_cell = "1.18.0"
