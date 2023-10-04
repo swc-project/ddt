@@ -15,7 +15,6 @@ use tracing::info;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BinFile {
     pub path: PathBuf,
-    pub is_bench: bool,
     /// `.dSYM`,
     pub extra_files: Vec<PathBuf>,
     pub profile: ArtifactProfile,
@@ -61,65 +60,50 @@ pub struct CargoBuildTarget {
 }
 
 /// Compile one or more targets.
-pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
-    let release = target.release;
+pub fn compile(config: &CargoBuildTarget) -> Result<Vec<BinFile>> {
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".into());
 
-    let mut is_bench = false;
     let mut cmd = Command::new(&cargo);
 
-    if target.benches || target.bench.is_some() {
-        is_bench = true;
+    cmd.arg("buiid");
 
-        cmd.arg("bench").arg("--no-run");
-
-        if !release {
-            cmd.arg("--debug");
-        }
-
-        if target.benches {
-            cmd.arg("--benches");
-        }
-
-        if let Some(target) = &target.bench {
-            cmd.arg("--bench").arg(target);
-        }
-    } else if target.tests || target.test.is_some() {
-        cmd.arg("test").arg("--no-run");
-
-        if release {
-            cmd.arg("--release");
-        }
-
-        if target.tests {
-            cmd.arg("--tests");
-        }
-
-        if let Some(target) = &target.test {
-            cmd.arg("--test").arg(target);
-        }
-    } else {
-        cmd.arg("build");
-
-        if release {
-            cmd.arg("--release");
-        }
-
-        if target.lib {
-            cmd.arg("--lib");
-        }
-
-        if target.examples {
-            cmd.arg("--examples");
-        }
-
-        if let Some(target) = &target.example {
-            cmd.arg("--example").arg(target);
-        }
+    if config.release {
+        cmd.arg("--release");
     }
 
-    if let Some(features) = &target.features {
+    if !config.lib {
+        cmd.arg("--no-lib");
+    }
+
+    if config.benches {
+        cmd.arg("--benches");
+    }
+
+    if let Some(target) = &config.bench {
+        cmd.arg("--bench").arg(target);
+    }
+
+    if config.tests {
+        cmd.arg("--tests");
+    }
+
+    if let Some(target) = &config.test {
+        cmd.arg("--test").arg(target);
+    }
+    if config.examples {
+        cmd.arg("--examples");
+    }
+
+    if let Some(target) = &config.example {
+        cmd.arg("--example").arg(target);
+    }
+
+    if let Some(features) = &config.features {
         cmd.arg("--features").arg(features.join(","));
+    }
+
+    for pkg in &config.packages {
+        cmd.arg("-p").arg(pkg);
     }
 
     cmd.arg("--message-format=json");
@@ -161,7 +145,6 @@ pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
                             Some(v) => v.into(),
                             None => continue,
                         },
-                        is_bench,
                         extra_files: artifact.filenames.into_iter().map(From::from).collect(),
                         profile: artifact.profile,
                         manifest_path: artifact.manifest_path.into(),
