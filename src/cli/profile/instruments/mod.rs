@@ -3,9 +3,13 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 
-use self::{list_templates::ListTemplatesCommand, run::RunCommand, util::XcodeInstruments};
+use self::{
+    cargo::CargoCommand, list_templates::ListTemplatesCommand, run::RunCommand,
+    util::XcodeInstruments,
+};
 use crate::util::wrap;
 
+mod cargo;
 mod list_templates;
 mod run;
 mod util;
@@ -25,7 +29,8 @@ impl InstrumentsCommand {
 
             match self.cmd {
                 Inner::ListTemplates(cmd) => cmd.run(xctrace_tool).await,
-                Inner::Run(cmd) => cmd.run(xctrace_tool).await,
+                Inner::Run(cmd) => cmd.run(xctrace_tool, Default::default()).await,
+                Inner::Cargo(cmd) => cmd.run(xctrace_tool).await,
             }
         })
         .await
@@ -37,6 +42,7 @@ impl InstrumentsCommand {
 enum Inner {
     Run(RunCommand),
     ListTemplates(ListTemplatesCommand),
+    Cargo(CargoCommand),
 }
 
 /// Launch Xcode Instruments on the provided trace file.

@@ -8,7 +8,7 @@ use std::{
     process::{Command, Output},
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use semver::Version;
 use tracing::info;
 
@@ -20,6 +20,10 @@ pub(super) struct CmdArgs {
 
     /// Arguments to pass to the target binary
     pub args: Vec<String>,
+
+    pub output_path: Option<PathBuf>,
+
+    pub envs: Vec<(String, String)>,
 }
 
 /// Holds available templates.
@@ -29,6 +33,7 @@ pub struct TemplateCatalog {
 }
 
 /// Represents the Xcode Instrument version detected.
+#[derive(Debug, Clone, Copy)]
 pub enum XcodeInstruments {
     XcTrace,
     InstrumentsBinary,
@@ -404,28 +409,42 @@ pub fn render_template_catalog(catalog: &TemplateCatalog) -> String {
 fn prepare_trace_filepath(
     target_filepath: &Path,
     template_name: &str,
-) -> Result<(tempfile::TempDir, PathBuf)> {
+    output_path: Option<&Path>,
+) -> Result<(Option<tempfile::TempDir>, PathBuf)> {
+    if let Some(output_path) = output_path {
+        if let Some(parent_dir) = output_path.parent() {
+            std::fs::create_dir_all(parent_dir).context("failed to prepare output path")?;
+        }
+
+        return Ok((None, output_path.to_path_buf()));
+    }
+
     let trace_dir = tempfile::TempDir::new()?;
 
-    let trace_filename = {
-        let target_shortname = target_filepath
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .ok_or_else(|| anyhow!("invalid target path {:?}", target_filepath))?;
-        let template_name = template_name.replace(' ', "-");
-        let now = chrono::Local::now();
-
-        format!(
-            "{}_{}_{}.trace",
-            target_shortname,
-            template_name,
-            now.format("%F_%H%M%S-%3f")
-        )
-    };
+    let trace_filename = file_name_for_trace_file(target_filepath, template_name)?;
 
     let trace_filepath = trace_dir.path().join(trace_filename);
 
-    Ok((trace_dir, trace_filepath))
+    Ok((Some(trace_dir), trace_filepath))
+}
+
+pub(super) fn file_name_for_trace_file(
+    target_filepath: &Path,
+    template_name: &str,
+) -> Result<String> {
+    let target_shortname = target_filepath
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| anyhow!("invalid target path {:?}", target_filepath))?;
+    let template_name = template_name.replace(' ', "-");
+    let now = chrono::Local::now();
+
+    Ok(format!(
+        "{}_{}_{}.trace",
+        target_shortname,
+        template_name,
+        now.format("%F_%H%M%S-%3f")
+    ))
 }
 
 /// Return the complete template name, replacing abbreviation if provided.
@@ -464,7 +483,8 @@ pub(super) fn profile_target(
     let template_name = resolve_template_name(&cmd.template_name);
 
     // 2. Compute the trace filepath and create its parent directory
-    let (trace_dir, trace_file_path) = prepare_trace_filepath(target_filepath, template_name)?;
+    let (trace_dir, trace_file_path) =
+        prepare_trace_filepath(target_filepath, template_name, cmd.output_path.as_deref())?;
 
     // 3. Print current activity `Profiling target/debug/tries`
     info!(
@@ -480,6 +500,10 @@ pub(super) fn profile_target(
 
     if !cmd.args.is_empty() {
         command.args(&cmd.args);
+    }
+
+    for (k, v) in &cmd.envs {
+        command.env(k, v);
     }
 
     eprintln!("Running {:?}", command);

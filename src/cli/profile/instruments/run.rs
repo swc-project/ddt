@@ -23,6 +23,10 @@ pub(super) struct RunCommand {
     #[clap(long)]
     pub time_limit: Option<usize>,
 
+    /// The path to the output trace file
+    #[clap(long, short = 'o')]
+    pub output_path: Option<PathBuf>,
+
     #[clap(long)]
     pub no_open: bool,
 
@@ -30,7 +34,11 @@ pub(super) struct RunCommand {
 }
 
 impl RunCommand {
-    pub async fn run(self, xctrace_tool: XcodeInstruments) -> Result<()> {
+    pub async fn run(
+        self,
+        xctrace_tool: XcodeInstruments,
+        envs: Vec<(String, String)>,
+    ) -> Result<()> {
         let c = self.clone();
 
         wrap(async move {
@@ -42,6 +50,8 @@ impl RunCommand {
                     args: self.args.clone(),
                     template_name: self.template.clone(),
                     time_limit: self.time_limit,
+                    output_path: self.output_path,
+                    envs,
                 },
             )
             .context("failed to profile target binary")?;
