@@ -71,9 +71,9 @@ pub fn compile(config: &CargoBuildTarget) -> Result<Vec<BinFile>> {
         cmd.arg("--release");
     }
 
-    if !config.lib {
-        cmd.arg("--no-lib");
-    }
+    // if !config.lib {
+    //     cmd.arg("--no-lib");
+    // }
 
     if config.benches {
         cmd.arg("--benches");
