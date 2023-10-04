@@ -7,8 +7,8 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use cargo_metadata::{ArtifactProfile, Message};
+use clap::{Args, Parser};
 use is_executable::IsExecutable;
-use structopt::StructOpt;
 
 /// Built bin file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -20,39 +20,8 @@ pub struct BinFile {
     pub profile: ArtifactProfile,
 }
 
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
-pub struct TestSpecifier {
-    #[structopt(long)]
-    pub lib: bool,
-
-    #[structopt(long)]
-    pub test: Option<String>,
-
-    #[structopt(long)]
-    pub tests: bool,
-
-    args: Vec<String>,
-}
-
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
-pub struct BenchSpecifier {
-    #[structopt(long)]
-    pub lib: bool,
-
-    #[structopt(long)]
-    pub bench: Option<String>,
-
-    #[structopt(long)]
-    pub benches: bool,
-
-    args: Vec<String>,
-}
-
-#[derive(Debug, Clone, StructOpt)]
-#[structopt(setting = structopt::clap::AppSettings::TrailingVarArg)]
-pub struct CargoTarget {
+#[derive(Debug, Clone, Parser)]
+pub struct CargoBuildTarget {
     #[structopt(long)]
     lib: bool,
 
@@ -91,7 +60,7 @@ pub struct CargoTarget {
     target_args: Vec<String>,
 }
 
-impl CargoTarget {
+impl CargoBuildTarget {
     pub fn supports_release_flag(&self) -> bool {
         self.tests || self.test.is_some() || self.examples || self.example.is_some()
     }
@@ -102,7 +71,7 @@ impl CargoTarget {
 }
 
 /// Compile one or more targets.
-pub fn compile(target: &CargoTarget) -> Result<Vec<BinFile>, Error> {
+pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
     let release = target.release;
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".into());
 
