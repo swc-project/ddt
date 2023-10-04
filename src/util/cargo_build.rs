@@ -22,42 +22,38 @@ pub struct BinFile {
 
 #[derive(Debug, Clone, Parser)]
 pub struct CargoBuildTarget {
-    #[structopt(long)]
+    #[clap(long)]
     lib: bool,
 
-    #[structopt(long)]
+    #[clap(long)]
     release: bool,
 
-    #[structopt(long)]
+    #[clap(long)]
     bin: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     bench: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     benches: bool,
 
-    #[structopt(long)]
+    #[clap(long)]
     test: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     tests: bool,
 
-    #[structopt(long)]
+    #[clap(long)]
     example: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     examples: bool,
 
-    #[structopt(long)]
+    #[clap(long)]
     features: Option<Vec<String>>,
 
-    /// Arguments passed to the target binary.
-    ///
-    /// To pass flags, precede child args with `--`,
-    /// e.g. `cargo profile subcommand -- -t test1.txt --slow-mode`.
-    #[structopt(value_name = "ARGS")]
-    target_args: Vec<String>,
+    #[clap(long = "package", short = 'p')]
+    packages: Vec<String>,
 }
 
 impl CargoBuildTarget {

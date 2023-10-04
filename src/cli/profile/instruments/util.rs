@@ -31,6 +31,7 @@ pub struct TemplateCatalog {
 }
 
 /// Represents the Xcode Instrument version detected.
+#[derive(Debug, Clone, Copy)]
 pub enum XcodeInstruments {
     XcTrace,
     InstrumentsBinary,

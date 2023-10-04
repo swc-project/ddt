@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use tokio::process::Command;
 use tracing::info;
 
-mod cargo_build;
+pub mod cargo_build;
 pub mod intersection_union;
 
 /// Type annotation for [anyhow::Result]
