@@ -22,6 +22,8 @@ pub(super) struct CmdArgs {
     pub args: Vec<String>,
 
     pub output_path: Option<PathBuf>,
+
+    pub envs: Vec<(String, String)>,
 }
 
 /// Holds available templates.
@@ -498,6 +500,10 @@ pub(super) fn profile_target(
 
     if !cmd.args.is_empty() {
         command.args(&cmd.args);
+    }
+
+    for (k, v) in &cmd.envs {
+        command.env(k, v);
     }
 
     eprintln!("Running {:?}", command);

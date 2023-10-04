@@ -51,6 +51,7 @@ impl RunCommand {
                     template_name: self.template.clone(),
                     time_limit: self.time_limit,
                     output_path: self.output_path,
+                    envs,
                 },
             )
             .context("failed to profile target binary")?;

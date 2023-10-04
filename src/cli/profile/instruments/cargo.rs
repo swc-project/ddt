@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use anyhow::{bail, Context, Result};
 use clap::Args;
 use dialoguer::Select;
