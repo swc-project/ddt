@@ -65,7 +65,7 @@ pub fn compile(config: &CargoBuildTarget) -> Result<Vec<BinFile>> {
 
     let mut cmd = Command::new(&cargo);
 
-    cmd.arg("buiid");
+    cmd.arg("build");
 
     if config.release {
         cmd.arg("--release");
