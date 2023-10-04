@@ -19,6 +19,7 @@ pub struct BinFile {
     pub extra_files: Vec<PathBuf>,
     pub profile: ArtifactProfile,
 
+    pub crate_name: String,
     pub manifest_path: PathBuf,
 }
 
@@ -163,6 +164,7 @@ pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
                         extra_files: artifact.filenames.into_iter().map(From::from).collect(),
                         profile: artifact.profile,
                         manifest_path: artifact.manifest_path.into(),
+                        crate_name: artifact.target.name,
                     });
                     continue;
                 }
