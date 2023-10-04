@@ -9,6 +9,7 @@ use anyhow::{bail, Context, Result};
 use cargo_metadata::{ArtifactProfile, Message};
 use clap::Parser;
 use is_executable::IsExecutable;
+use tracing::info;
 
 /// Built bin file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -196,6 +197,8 @@ pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
     }
 
     binaries.sort_by_key(|b| b.path.clone());
+
+    info!("cargo build produced {:?}", binaries);
 
     Ok(binaries)
 }
