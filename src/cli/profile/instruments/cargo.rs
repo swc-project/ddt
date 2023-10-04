@@ -72,7 +72,11 @@ impl CargoCommand {
 
             add(
                 "CARGO_MANIFEST_DIR",
-                bin.manifest_path.to_string_lossy().to_string(),
+                bin.manifest_path
+                    .parent()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string(),
             );
             add(
                 "CARGO_WORKSPACE_DIR",
