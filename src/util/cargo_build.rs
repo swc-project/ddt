@@ -157,7 +157,7 @@ pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
 
                     artifact.filenames.retain(|path| {
                         if executable.is_none() {
-                            if path.is_executable() {
+                            if PathBuf::from(path).is_executable() {
                                 executable = Some(path.clone());
                                 return false;
                             }
@@ -168,11 +168,11 @@ pub fn compile(target: &CargoBuildTarget) -> Result<Vec<BinFile>> {
 
                     binaries.push(BinFile {
                         path: match executable {
-                            Some(v) => v,
+                            Some(v) => v.into(),
                             None => continue,
                         },
                         is_bench,
-                        extra_files: artifact.filenames,
+                        extra_files: artifact.filenames.into_iter().map(From::from).collect(),
                         profile: artifact.profile,
                     });
                     continue;
