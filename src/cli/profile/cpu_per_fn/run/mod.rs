@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use ahash::{HashMap, HashSet};
 use anyhow::{bail, Context, Result};
 use clap::Args;
 use tempfile::TempDir;
@@ -35,7 +36,7 @@ impl RunCommand {
         wrap(async move {
             let dir = TempDir::new().context("failed to create temp dir")?;
 
-            let cmd = if cfg!(target_os = "macos") {
+            let mut cmd = if cfg!(target_os = "macos") {
                 make_dtrace_command(
                     self.root,
                     &self.bin,
@@ -45,8 +46,12 @@ impl RunCommand {
                     &self.args,
                 )?
             } else {
-                bail!("cargo profile cpu currently supports only `macos`")
+                bail!("ddt profile cpu-per-fn currently supports only `macos`")
             };
+            for (k, v) in envs {
+                cmd.env(k, v);
+            }
+
             run_profiler(cmd).context("failed to profile program")?;
 
             let collapsed: Vec<u8> = if cfg!(target_os = "macos") {
@@ -85,4 +90,66 @@ impl RunCommand {
             )
         })
     }
+}
+
+struct FnTimingInfo {
+    name: String,
+    total_used: usize,
+    /// The percentage of time used by function code itself.
+    self_used: usize,
+}
+
+fn process_collapsed(data: &str) -> Result<(usize, Vec<FnTimingInfo>)> {
+    let mut lines: Vec<&str> = data.lines().into_iter().collect();
+    lines.reverse();
+    let (frames, time, ignored) =
+        merge::frames(lines, true).context("failed to merge collapsed stack frame")?;
+
+    if time == 0 {
+        bail!("No stack counts found")
+    }
+
+    if ignored > 0 {
+        eprintln!("ignored {} lines with invalid format", ignored)
+    }
+
+    let mut total_time = HashMap::<_, usize>::default();
+    let mut itself_time = HashMap::<_, usize>::default();
+
+    // Check if time collapses
+    for frame in &frames {
+        let fn_dur = frame.end_time - frame.start_time;
+        *total_time.entry(frame.location.function).or_default() += fn_dur;
+
+        let children = frames.iter().filter(|child| {
+            frame.location.depth + 1 == child.location.depth
+                && frame.start_time <= child.start_time
+                && child.end_time <= frame.end_time
+        });
+
+        let mut itself_dur = fn_dur;
+
+        for child in children {
+            let fn_dur = child.end_time - child.start_time;
+            itself_dur -= fn_dur;
+        }
+
+        *itself_time.entry(frame.location.function).or_default() += itself_dur;
+    }
+
+    let mut result = vec![];
+    let mut done = HashSet::default();
+
+    for frame in &frames {
+        if !done.insert(&frame.location.function) {
+            continue;
+        }
+        result.push(FnTimingInfo {
+            name: frame.location.function.to_string(),
+            total_used: *total_time.entry(frame.location.function).or_default(),
+            self_used: *itself_time.entry(frame.location.function).or_default(),
+        });
+    }
+
+    Ok((time, result))
 }
