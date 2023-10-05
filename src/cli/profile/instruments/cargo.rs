@@ -4,7 +4,7 @@ use dialoguer::Select;
 
 use super::{run::RunCommand, util::file_name_for_trace_file};
 use crate::{
-    cli::profile::instruments::util::XcodeInstruments,
+    cli::{profile::instruments::util::XcodeInstruments, util::cargo::get_one_binary_using_cargo},
     util::{
         cargo_build::{cargo_target_dir, cargo_workspace_dir, compile, CargoBuildTarget},
         wrap,
@@ -36,29 +36,7 @@ pub(super) struct CargoCommand {
 impl CargoCommand {
     pub async fn run(self, xctrace_tool: XcodeInstruments) -> Result<()> {
         let (cmd, envs) = wrap(async move {
-            let bins =
-                compile(&self.build_target).context("failed to build the binary using cargo")?;
-
-            if bins.is_empty() {
-                bail!("cargo build did not produce any binaries")
-            }
-
-            let bin = if bins.len() == 1 {
-                bins.into_iter().next().unwrap()
-            } else {
-                let items = bins
-                    .iter()
-                    .map(|bin| format!("[{}] {}", bin.crate_name, bin.path.display().to_string()))
-                    .collect::<Vec<_>>();
-
-                let selection = Select::new()
-                    .with_prompt("What do you choose?")
-                    .items(&items)
-                    .interact()
-                    .unwrap();
-
-                bins.into_iter().nth(selection).unwrap()
-            };
+            let bin = get_one_binary_using_cargo(&self.build_target).await?;
 
             let output_path = cargo_target_dir()?
                 .join("instruments")
