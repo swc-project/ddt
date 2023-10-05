@@ -18,7 +18,8 @@ pub fn run_profiler(mut cmd: Command) -> Result<(), Error> {
     // process group).
     #[cfg(unix)]
     let handler = unsafe {
-        signal_hook::register(signal_hook::SIGINT, || {}).expect("cannot register signal handler")
+        signal_hook::low_level::register(signal_hook::consts::SIGINT, || {})
+            .expect("cannot register signal handler")
     };
 
     let mut recorder = cmd
@@ -30,7 +31,7 @@ pub fn run_profiler(mut cmd: Command) -> Result<(), Error> {
         .with_context(|| format!("failed to wait for child proceess: {}", cmd_str))?;
 
     #[cfg(unix)]
-    signal_hook::unregister(handler);
+    signal_hook::low_level::unregister(handler);
 
     // only stop if perf exited unsuccessfully, but
     // was not killed by a signal (assuming that the
@@ -48,7 +49,7 @@ fn terminated_by_error(status: ExitStatus) -> bool {
     status
         .signal() // the default needs to be true because that's the neutral element for `&&`
         .map_or(true, |code| {
-            code != signal_hook::SIGINT && code != signal_hook::SIGTERM
+            code != signal_hook::consts::SIGINT && code != signal_hook::consts::SIGTERM
         })
         && !status.success()
 }
