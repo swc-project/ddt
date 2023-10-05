@@ -35,8 +35,13 @@ pub(super) struct RunCommand {
     #[clap(long)]
     pub no_open: bool,
 
+    #[clap(long)]
+    pub root: bool,
+
     pub args: Vec<String>,
 }
+
+const DTRACE_OUTPUT_FILENAME: &str = "cargo-profile-flamegraph.stacks";
 
 impl RunCommand {
     pub async fn run(self, envs: Vec<(String, String)>) -> Result<()> {
@@ -52,15 +57,15 @@ impl RunCommand {
 
             let cmd = if cfg!(target_os = "macos") {
                 make_dtrace_command(
-                    root,
-                    binary,
-                    &dir.path().join("cargo-profile-flamegraph.stacks"),
+                    self.root,
+                    &self.bin,
+                    &dir.path().join(DTRACE_OUTPUT_FILENAME),
                     None,
                     None,
-                    target.args(),
+                    &self.args,
                 )?
             } else if cfg!(target_os = "linux") {
-                self::linux::perf(root, binary, None, target.args())?
+                self::linux::perf(self.root, &self.bin, None, &self.args)?
             } else {
                 bail!("cargo profile flamegraph currently supports only `linux` and `macos`")
             };
@@ -68,7 +73,7 @@ impl RunCommand {
             run_profiler(cmd).context("failed to profile program")?;
 
             let collapsed: Vec<u8> = if cfg!(target_os = "macos") {
-                dtrace::to_collapsed(&dir.path().join(self::macos::DTRACE_OUTPUT_FILENAME))?
+                dtrace::to_collapsed(&dir.path().join(DTRACE_OUTPUT_FILENAME))?
             } else if cfg!(target_os = "linux") {
                 self::linux::to_collapsed()?
             } else {

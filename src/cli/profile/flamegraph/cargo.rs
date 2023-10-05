@@ -25,6 +25,9 @@ pub(super) struct CargoCommand {
     #[clap(long)]
     no_open: bool,
 
+    #[clap(long)]
+    root: bool,
+
     #[clap(flatten)]
     build_target: CargoBuildTarget,
 
@@ -55,11 +58,12 @@ impl CargoCommand {
 
             Ok((
                 RunCommand {
-                    time_limit: self.time_limit,
-                    no_open: self.no_open,
-                    args: self.args,
                     bin: bin.path,
+                    time_limit: self.time_limit,
                     output_path: Some(output_path),
+                    no_open: self.no_open,
+                    root: self.root,
+                    args: self.args,
                 },
                 envs,
             ))
