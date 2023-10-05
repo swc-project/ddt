@@ -1,12 +1,11 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::Args;
-use dialoguer::Select;
 
 use super::{run::RunCommand, util::file_name_for_trace_file};
 use crate::{
     cli::{profile::instruments::util::XcodeInstruments, util::cargo::get_one_binary_using_cargo},
     util::{
-        cargo_build::{cargo_target_dir, cargo_workspace_dir, compile, CargoBuildTarget},
+        cargo_build::{cargo_target_dir, CargoBuildTarget},
         wrap,
     },
 };
@@ -36,30 +35,11 @@ pub(super) struct CargoCommand {
 impl CargoCommand {
     pub async fn run(self, xctrace_tool: XcodeInstruments) -> Result<()> {
         let (cmd, envs) = wrap(async move {
-            let bin = get_one_binary_using_cargo(&self.build_target).await?;
+            let (bin, envs) = get_one_binary_using_cargo(&self.build_target).await?;
 
             let output_path = cargo_target_dir()?
                 .join("instruments")
                 .join(file_name_for_trace_file(&bin.path, &self.template)?);
-
-            let mut envs = vec![];
-
-            let mut add = |key: &str, value: String| {
-                envs.push((key.to_string(), value));
-            };
-
-            add(
-                "CARGO_MANIFEST_DIR",
-                bin.manifest_path
-                    .parent()
-                    .unwrap()
-                    .to_string_lossy()
-                    .to_string(),
-            );
-            add(
-                "CARGO_WORKSPACE_DIR",
-                cargo_workspace_dir()?.to_string_lossy().to_string(),
-            );
 
             Ok((
                 RunCommand {
