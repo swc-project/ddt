@@ -12,6 +12,8 @@ use anyhow::{anyhow, Context, Result};
 use semver::Version;
 use tracing::info;
 
+use crate::cli::profile::util::profiler::run_profiler;
+
 #[derive(Debug)]
 pub(super) struct CmdArgs {
     pub template_name: String,
@@ -506,16 +508,9 @@ pub(super) fn profile_target(
         command.env(k, v);
     }
 
-    eprintln!("Running {:?}", command);
+    info!("Running {:?}", command);
 
-    let output = command.output()?;
-
-    if !output.status.success() {
-        let stderr =
-            String::from_utf8(output.stderr).unwrap_or_else(|_| "failed to capture stderr".into());
-
-        eprintln!("instruments errored: {}", stderr);
-    }
+    run_profiler(command)?;
 
     info!("Trace file written to {:?}", trace_file_path);
     // Don't delete the trace file.
