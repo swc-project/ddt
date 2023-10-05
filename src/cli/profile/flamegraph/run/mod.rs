@@ -50,7 +50,7 @@ impl RunCommand {
         wrap(async move {
             //
 
-            let dir = TempDir::new_in("ddt-flamegraph").context("failed to create temp dir")?;
+            let dir = TempDir::new().context("failed to create temp dir")?;
 
             //
             info!("Profiling {}", self.bin.display());
