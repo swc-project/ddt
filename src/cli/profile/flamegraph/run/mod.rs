@@ -10,9 +10,12 @@ use tempfile::TempDir;
 use tracing::info;
 
 use crate::{
-    cli::profile::util::{
-        dtrace::{self, make_dtrace_command},
-        profiler::run_profiler,
+    cli::{
+        profile::util::{
+            dtrace::{self, make_dtrace_command},
+            profiler::run_profiler,
+        },
+        util::open_file,
     },
     util::wrap,
 };
@@ -110,6 +113,10 @@ impl RunCommand {
             })?;
 
             info!("Flamegraph printed to {}", flamegraph_file_path.display());
+
+            if !self.no_open {
+                let _ = open_file(&flamegraph_file_path);
+            }
 
             Ok(())
         })

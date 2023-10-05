@@ -1,6 +1,4 @@
-use std::path::Path;
-
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 
 use self::{
@@ -43,16 +41,4 @@ enum Inner {
     Run(RunCommand),
     ListTemplates(ListTemplatesCommand),
     Cargo(CargoCommand),
-}
-
-/// Launch Xcode Instruments on the provided trace file.
-fn launch_instruments(trace_filepath: &Path) -> Result<()> {
-    use std::process::Command;
-
-    let status = Command::new("open").arg(trace_filepath).status()?;
-
-    if !status.success() {
-        bail!("`open` failed")
-    }
-    Ok(())
 }
