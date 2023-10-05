@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-/// Invoke a binary file built using `cargo` under the `instruments` tool.
+/// Invoke a binary file built using `cargo` and create a flamegraph
 #[derive(Debug, Clone, Args)]
 pub(super) struct CargoCommand {
     #[clap(long)]
