@@ -1,14 +1,10 @@
-use crate::cargo::BinFile;
-use crate::util::command;
-use anyhow::Context;
-use anyhow::Error;
-use inferno::collapse::dtrace::Folder;
-use inferno::collapse::dtrace::Options as CollapseOptions;
-use inferno::collapse::Collapse;
-use std::fs::OpenOptions;
-use std::io::BufReader;
-use std::path::Path;
-use std::process::Command;
+use std::{fs::OpenOptions, io::BufReader, path::Path, process::Command};
+
+use anyhow::{Context, Error};
+use inferno::collapse::{
+    dtrace::{Folder, Options as CollapseOptions},
+    Collapse,
+};
 
 pub(crate) fn make_dtrace_command(
     root: bool,

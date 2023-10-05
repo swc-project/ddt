@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::Args;
 use tempfile::TempDir;
+use tracing::info;
 
 use crate::util::wrap;
 
@@ -35,7 +36,7 @@ impl RunCommand {
             let dir = TempDir::new_in("ddt-flamegraph").context("failed to create temp dir")?;
 
             //
-            eprintln!("Profiling {}", binary.path.display());
+            info!("Profiling {}", self.bin.display());
 
             let cmd = if cfg!(target_os = "macos") {
                 make_dtrace_command(
