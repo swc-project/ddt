@@ -20,6 +20,7 @@ impl ProfileCommand {
         match self.cmd {
             Inner::Flamegraph(cmd) => cmd.run().await,
             Inner::Instruments(cmd) => cmd.run().await,
+            Inner::CpuPerFn(cmd) => cmd.run().await,
         }
     }
 }
@@ -28,4 +29,5 @@ impl ProfileCommand {
 enum Inner {
     Flamegraph(FlamegraphCommand),
     Instruments(InstrumentsCommand),
+    CpuPerFn(CpuPerFnCommand),
 }
