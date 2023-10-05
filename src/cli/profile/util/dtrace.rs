@@ -8,13 +8,19 @@ use inferno::collapse::{
 
 pub(crate) fn make_dtrace_command(
     root: bool,
-    file: &BinFile,
+    file: &Path,
     output: &Path,
     freq: Option<u32>,
     custom_cmd: Option<String>,
     args: &[String],
 ) -> Result<Command, Error> {
-    let mut c = command(root, "dtrace");
+    let mut c = if root {
+        let mut c = Command::new("sudo");
+        c.arg("dtrace");
+        c
+    } else {
+        Command::new("dtrace")
+    };
 
     let dtrace_script = custom_cmd.unwrap_or(format!(
         "profile-{} /pid == $target/ {{ @[ustack(100)] = count(); }}",
@@ -31,13 +37,10 @@ pub(crate) fn make_dtrace_command(
     c.arg(output);
 
     let mut escaped = String::new();
-    escaped.push_str(&file.path.to_string_lossy());
+    escaped.push_str(&file.to_string_lossy());
     for arg in args {
         escaped.push(' ');
         escaped.push_str(&arg.replace(" ", "\\ "));
-    }
-    if file.is_bench {
-        escaped.push_str(" --bench");
     }
 
     c.arg("-c");

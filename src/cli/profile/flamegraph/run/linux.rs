@@ -1,4 +1,4 @@
-use std::{env, io::Cursor, process::Command};
+use std::{env, io::Cursor, path::Path, process::Command};
 
 use anyhow::{Context, Error};
 use inferno::collapse::{
@@ -9,13 +9,19 @@ use inferno::collapse::{
 /// Invoked perf to record cpu usages.
 pub(super) fn perf(
     root: bool,
-    file: &BinFile,
+    file: &Path,
     freq: Option<u32>,
     args: &[String],
 ) -> Result<Command, Error> {
     let perf = env::var("PERF").unwrap_or_else(|_| "perf".to_string());
 
-    let mut c = command(root, &perf);
+    let mut c = if root {
+        let mut c = Command::new("sudo");
+        c.arg(perf);
+        c
+    } else {
+        Command::new(perf)
+    };
 
     c.arg("record")
         .arg("-F")
@@ -24,10 +30,7 @@ pub(super) fn perf(
         .arg("dwarf")
         .arg("-g");
 
-    c.arg(&file.path);
-    if file.is_bench {
-        c.arg("--bench");
-    }
+    c.arg(&file);
 
     c.args(args);
 
