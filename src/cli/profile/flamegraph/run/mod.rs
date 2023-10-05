@@ -55,7 +55,7 @@ impl RunCommand {
             //
             info!("Profiling {}", self.bin.display());
 
-            let cmd = if cfg!(target_os = "macos") {
+            let mut cmd = if cfg!(target_os = "macos") {
                 make_dtrace_command(
                     self.root,
                     &self.bin,
@@ -69,6 +69,9 @@ impl RunCommand {
             } else {
                 bail!("cargo profile flamegraph currently supports only `linux` and `macos`")
             };
+            for (k, v) in envs {
+                cmd.env(k, v);
+            }
 
             run_profiler(cmd).context("failed to profile program")?;
 
