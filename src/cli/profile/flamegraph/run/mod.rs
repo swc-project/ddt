@@ -70,7 +70,7 @@ impl RunCommand {
             } else if cfg!(target_os = "linux") {
                 self::linux::perf(self.root, &self.bin, None, &self.args)?
             } else {
-                bail!("cargo profile flamegraph currently supports only `linux` and `macos`")
+                bail!("ddt profile flamegraph currently supports only `linux` and `macos`")
             };
             for (k, v) in envs {
                 cmd.env(k, v);
@@ -83,7 +83,7 @@ impl RunCommand {
             } else if cfg!(target_os = "linux") {
                 self::linux::to_collapsed()?
             } else {
-                bail!("cargo profile flamegraph currently supports only `linux` and `macos`")
+                bail!("ddt profile flamegraph currently supports only `linux` and `macos`")
             };
             let mut collapsed = Cursor::new(collapsed);
 

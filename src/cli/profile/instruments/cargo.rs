@@ -28,7 +28,7 @@ pub(super) struct CargoCommand {
     /// Arguments passed to the target binary.
     ///
     /// To pass flags, precede child args with `--`,
-    /// e.g. `cargo profile subcommand -- -t test1.txt --slow-mode`.
+    /// e.g. `ddt profile subcommand -- -t test1.txt --slow-mode`.
     args: Vec<String>,
 }
 
