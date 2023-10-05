@@ -109,6 +109,8 @@ impl RunCommand {
                 )
             })?;
 
+            info!("Flamegraph printed to {}", flamegraph_file_path.display());
+
             Ok(())
         })
         .await
