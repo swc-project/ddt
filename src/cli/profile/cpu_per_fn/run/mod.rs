@@ -4,6 +4,7 @@ use ahash::{HashMap, HashSet};
 use anyhow::{bail, Context, Result};
 use clap::Args;
 use tempfile::TempDir;
+use tracing::info;
 
 use crate::{
     cli::profile::util::{
@@ -54,6 +55,8 @@ impl RunCommand {
             }
 
             run_profiler(cmd).context("failed to profile program")?;
+
+            info!("Processing collapsed stack data");
 
             let collapsed: Vec<u8> = if cfg!(target_os = "macos") {
                 dtrace::to_collapsed(&dir.path().join("program.stacks"))?
