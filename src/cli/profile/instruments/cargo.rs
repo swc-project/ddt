@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-/// Invoke a binary file under the `instruments` tool.
+/// Invoke a binary file built using `cargo` under the `instruments` tool.
 #[derive(Debug, Clone, Args)]
 pub(super) struct CargoCommand {
     #[clap(long, short = 't')]
