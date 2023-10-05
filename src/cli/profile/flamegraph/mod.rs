@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 
-use self::run::RunCommand;
+use self::{cargo::CargoCommand, run::RunCommand};
 use crate::util::wrap;
 
 mod cargo;
