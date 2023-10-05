@@ -408,6 +408,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
+ "signal-hook",
  "string_cache",
  "tempfile",
  "tokio",

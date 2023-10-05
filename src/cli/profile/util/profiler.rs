@@ -1,10 +1,8 @@
-use anyhow::bail;
-use anyhow::Context;
-use anyhow::Error;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
-use std::process::Command;
-use std::process::ExitStatus;
+use std::process::{Command, ExitStatus};
+
+use anyhow::{bail, Context, Error};
 
 /// Invokes profiler with proper signal hooks.
 ///
