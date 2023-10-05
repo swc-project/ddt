@@ -1,10 +1,9 @@
 //! Copied from https://github.com/jonhoo/inferno/blob/de3f7d94d4718bfee57655c1fddd4d2714bc78d0/src/flamegraph/mod.rs
 
-use anyhow::bail;
-use anyhow::Error;
-use log::warn;
-use std::collections::HashMap;
-use std::iter;
+use std::{collections::HashMap, iter};
+
+use anyhow::{bail, Error};
+use tracing::warn;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub(super) struct Frame<'a> {
@@ -155,8 +154,8 @@ where
         // inject empty first-level stack frame to capture "all"
         let this = iter::once("").chain(stack.split(';'));
         if last.is_empty() {
-            // need to special-case this, because otherwise iter("") + "".split(';') == ["", ""]
-            //eprintln!("flow(_, {}, {})", stack, time);
+            // need to special-case this, because otherwise iter("") + "".split(';') == ["",
+            // ""] eprintln!("flow(_, {}, {})", stack, time);
             flow(&mut tmp, &mut frames, None, this, time, delta);
         } else {
             //eprintln!("flow({}, {}, {})", last, stack, time);
@@ -225,11 +224,11 @@ fn parse_nsamples(line: &mut &str, stripped_fractional_samples: &mut bool) -> Op
 
 // Tries to find a sample count at the end of a line.
 //
-// On success, the first value of the returned tuple will be the index to the sample count.
-// If the sample count is fractional, the second value will be the offset of the dot within
-// the sample count.
-// If the sample count is not fractional, the second value returned is the offset
-// to the last digit in the sample count.
+// On success, the first value of the returned tuple will be the index to the
+// sample count. If the sample count is fractional, the second value will be the
+// offset of the dot within the sample count.
+// If the sample count is not fractional, the second value returned is the
+// offset to the last digit in the sample count.
 //
 // If no sample count is found, `None` will be returned.
 pub(super) fn rfind_samples(line: &str) -> Option<(usize, usize)> {

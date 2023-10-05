@@ -10,6 +10,8 @@ use crate::{
 /// Invoke a binary file built using `cargo` and create a flamegraph
 #[derive(Debug, Clone, Args)]
 pub(super) struct CargoCommand {
+    root: bool,
+
     #[clap(long)]
     time_limit: Option<usize>,
 
@@ -31,6 +33,7 @@ impl CargoCommand {
             Ok((
                 RunCommand {
                     bin: bin.path,
+                    root: self.root,
                     time_limit: self.time_limit,
                     args: self.args,
                 },
