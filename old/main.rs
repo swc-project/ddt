@@ -1,14 +1,15 @@
-use crate::cargo::compile;
-use crate::cargo::CargoTarget;
-use crate::cpu::CpuCommand;
-use crate::flamegraph::FlameGraphCommand;
-use crate::instrument::InstrumentsCommand;
-use crate::trace::TraceCommand;
-use anyhow::bail;
-use anyhow::Context;
-use anyhow::Error;
 use std::env;
+
+use anyhow::{bail, Context, Error};
 use structopt::StructOpt;
+
+use crate::{
+    cargo::{compile, CargoTarget},
+    cpu::CpuCommand,
+    flamegraph::FlameGraphCommand,
+    instrument::InstrumentsCommand,
+    trace::TraceCommand,
+};
 
 mod cargo;
 mod cli_tools;
