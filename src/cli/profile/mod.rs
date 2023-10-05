@@ -1,9 +1,10 @@
-mod instruments;
-
 use anyhow::Result;
 use clap::{Args, Subcommand};
 
 use self::instruments::InstrumentsCommand;
+
+mod instruments;
+mod util;
 
 /// Profiles performance
 #[derive(Debug, Args)]
