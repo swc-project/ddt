@@ -1,13 +1,10 @@
-use crate::cargo::BinFile;
-use crate::util::command;
-use anyhow::Context;
-use anyhow::Error;
-use inferno::collapse::perf::Folder;
-use inferno::collapse::perf::Options as CollapseOptions;
-use inferno::collapse::Collapse;
-use std::env;
-use std::io::Cursor;
-use std::process::Command;
+use std::{env, io::Cursor, process::Command};
+
+use anyhow::{Context, Error};
+use inferno::collapse::{
+    perf::{Folder, Options as CollapseOptions},
+    Collapse,
+};
 
 /// Invoked perf to record cpu usages.
 pub(super) fn perf(

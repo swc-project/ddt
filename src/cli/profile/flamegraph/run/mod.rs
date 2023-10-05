@@ -5,7 +5,12 @@ use clap::Args;
 use tempfile::TempDir;
 use tracing::info;
 
-use crate::util::wrap;
+use crate::{
+    cli::profile::util::{dtrace::make_dtrace_command, profiler::run_profiler},
+    util::wrap,
+};
+
+mod linux;
 
 /// Invoke a binary file and create a flamegraph
 #[derive(Debug, Clone, Args)]
