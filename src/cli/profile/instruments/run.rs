@@ -4,9 +4,9 @@ use anyhow::{Context, Result};
 use clap::Args;
 
 use crate::{
-    cli::profile::instruments::{
-        launch_instruments,
-        util::{profile_target, CmdArgs, XcodeInstruments},
+    cli::{
+        profile::instruments::util::{profile_target, CmdArgs, XcodeInstruments},
+        util::open_file,
     },
     util::wrap,
 };
@@ -58,7 +58,7 @@ impl RunCommand {
 
             // Open Xcode Instruments if asked
             if !self.no_open {
-                launch_instruments(&trace_file_path)?;
+                open_file(&trace_file_path)?;
             }
 
             Ok(())
