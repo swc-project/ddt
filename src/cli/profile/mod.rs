@@ -1,8 +1,11 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 
-use self::{flamegraph::FlamegraphCommand, instruments::InstrumentsCommand};
+use self::{
+    cpu_per_fn::CpuPerFnCommand, flamegraph::FlamegraphCommand, instruments::InstrumentsCommand,
+};
 
+mod cpu_per_fn;
 mod flamegraph;
 mod instruments;
 mod util;
@@ -19,6 +22,7 @@ impl ProfileCommand {
         match self.cmd {
             Inner::Flamegraph(cmd) => cmd.run().await,
             Inner::Instruments(cmd) => cmd.run().await,
+            Inner::CpuPerFn(cmd) => cmd.run().await,
         }
     }
 }
@@ -27,4 +31,5 @@ impl ProfileCommand {
 enum Inner {
     Flamegraph(FlamegraphCommand),
     Instruments(InstrumentsCommand),
+    CpuPerFn(CpuPerFnCommand),
 }
