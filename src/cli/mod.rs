@@ -10,6 +10,7 @@ mod extra;
 mod git;
 mod profile;
 mod solve_version;
+mod util;
 
 #[derive(Debug, Parser)]
 pub struct CliArgs {

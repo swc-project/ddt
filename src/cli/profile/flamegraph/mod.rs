@@ -1,6 +1,10 @@
 use clap::{Args, Subcommand};
 
-/// Create a flamegraph by running a program
+use self::run::RunCommand;
+
+mod cargo;
+mod run;
+
 #[derive(Debug, Args)]
 pub(super) struct FlamegraphCommand {
     #[clap(subcommand)]
