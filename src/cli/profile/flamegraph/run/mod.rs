@@ -4,13 +4,16 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::Args;
 use tempfile::TempDir;
 use tracing::info;
 
 use crate::{
-    cli::profile::util::{dtrace::make_dtrace_command, profiler::run_profiler},
+    cli::profile::util::{
+        dtrace::{self, make_dtrace_command},
+        profiler::run_profiler,
+    },
     util::wrap,
 };
 
@@ -51,7 +54,7 @@ impl RunCommand {
                 make_dtrace_command(
                     root,
                     binary,
-                    &dir.path().join(self::macos::DTRACE_OUTPUT_FILENAME),
+                    &dir.path().join("cargo-profile-flamegraph.stacks"),
                     None,
                     None,
                     target.args(),
@@ -65,9 +68,7 @@ impl RunCommand {
             run_profiler(cmd).context("failed to profile program")?;
 
             let collapsed: Vec<u8> = if cfg!(target_os = "macos") {
-                crate::cli_tools::dtrace::to_collapsed(
-                    &dir.path().join(self::macos::DTRACE_OUTPUT_FILENAME),
-                )?
+                dtrace::to_collapsed(&dir.path().join(self::macos::DTRACE_OUTPUT_FILENAME))?
             } else if cfg!(target_os = "linux") {
                 self::linux::to_collapsed()?
             } else {
