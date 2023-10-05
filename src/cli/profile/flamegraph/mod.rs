@@ -1,6 +1,8 @@
+use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 
 use self::run::RunCommand;
+use crate::util::wrap;
 
 mod cargo;
 mod run;
@@ -9,6 +11,19 @@ mod run;
 pub(super) struct FlamegraphCommand {
     #[clap(subcommand)]
     cmd: Inner,
+}
+
+impl FlamegraphCommand {
+    pub async fn run(self) -> Result<()> {
+        wrap(async move {
+            match self.cmd {
+                Inner::Run(cmd) => cmd.run(Default::default()).await,
+                Inner::Cargo(cmd) => cmd.run().await,
+            }
+        })
+        .await
+        .context("failed to create flamegraph")
+    }
 }
 
 #[derive(Debug, Subcommand)]
