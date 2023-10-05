@@ -21,6 +21,7 @@ pub(super) struct RunCommand {
     /// The target binary to profile
     pub bin: PathBuf,
 
+    #[clap(long)]
     pub root: bool,
 
     #[clap(long)]
