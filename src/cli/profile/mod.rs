@@ -1,7 +1,9 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 
-use self::{flamegraph::FlamegraphCommand, instruments::InstrumentsCommand};
+use self::{
+    cpu_per_fn::CpuPerFnCommand, flamegraph::FlamegraphCommand, instruments::InstrumentsCommand,
+};
 
 mod cpu_per_fn;
 mod flamegraph;
