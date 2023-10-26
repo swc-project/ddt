@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use semver::VersionReq;
 
-use super::solver::{Dependency, PackageManager, PackageVersion};
+use super::solver::{PackageConstraint, PackageManager, PackageVersion};
 
 #[derive(Debug, Default)]
 pub struct CargoPackageManager;
@@ -43,7 +43,7 @@ impl PackageManager for CargoPackageManager {
             .map(|(ver, deps)| {
                 let deps = deps
                     .iter()
-                    .map(|d| Dependency {
+                    .map(|d| PackageConstraint {
                         name: d.crate_name().into(),
                         range: d
                             .requirement()

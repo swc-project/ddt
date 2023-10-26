@@ -37,20 +37,14 @@ pub struct Solution {}
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackageConstraint {
     pub name: PackageName,
-    pub constraints: VersionReq,
+    pub range: VersionReq,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackageVersion {
     pub name: PackageName,
     pub version: Version,
-    pub deps: Vec<Dependency>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Dependency {
-    pub name: PackageName,
-    pub range: VersionReq,
+    pub deps: Vec<PackageConstraint>,
 }
 
 /// All versions of a **single** package.
@@ -88,7 +82,7 @@ impl Solver {
 
         debug!("Resolving package `{}`", c.name);
 
-        let versions = self.pkg_mgr.resolve(&c.name, &c.constraints).await?;
+        let versions = self.pkg_mgr.resolve(&c.name, &c.range).await?;
 
         let versions = Arc::new(versions);
 
@@ -121,7 +115,7 @@ impl Solver {
         let pkg = self
             .get_pkg(&PackageConstraint {
                 name: name.clone(),
-                constraints: pkg_constraints,
+                range: pkg_constraints,
             })
             .await
             .with_context(|| {
@@ -208,7 +202,7 @@ impl Solver {
             let mut constraints = ConstraintStorage::root();
 
             for constraint in self.constraints.compatible_packages.iter() {
-                constraints.insert(constraint.name.clone(), constraint.constraints.clone());
+                constraints.insert(constraint.name.clone(), constraint.range.clone());
             }
 
             let constraints = constraints.freeze();
