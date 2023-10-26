@@ -67,7 +67,12 @@ impl Semver {
                 semver::Op::Less => Range::strictly_lower_than(Self(ver)),
                 semver::Op::LessEq => Range::strictly_lower_than(Self(ver).bump()),
                 semver::Op::Tilde => {
-                    todo!("~version")
+                    let mut with_minor_bump = ver.clone();
+                    with_minor_bump.minor += 1;
+
+                    //
+                    Range::higher_than(Self(ver))
+                        .intersection(&Range::strictly_lower_than(Self(with_minor_bump)))
                 }
                 semver::Op::Caret => Range::higher_than(Self(ver)),
                 semver::Op::Wildcard => Range::any(),
