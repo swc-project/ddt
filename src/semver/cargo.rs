@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use semver::VersionReq;
+use pubgrub::range::Range;
 
 use super::solver::{PackageConstraint, PackageInfo, PackageManager, Semver};
 
@@ -7,7 +7,7 @@ use super::solver::{PackageConstraint, PackageInfo, PackageManager, Semver};
 pub struct CargoPackageManager;
 
 impl PackageManager for CargoPackageManager {
-    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageInfo>> {
+    fn resolve(&self, package_name: &str, range: &Range<Semver>) -> Result<Vec<PackageInfo>> {
         if package_name == "std" || package_name == "core" {
             return Ok(vec![PackageInfo {
                 name: package_name.into(),
@@ -17,13 +17,9 @@ impl PackageManager for CargoPackageManager {
         }
 
         let index = crates_index::GitIndex::new_cargo_default()?;
-        let pkg = index.crate_(package_name).ok_or_else(|| {
-            anyhow!(
-                "Package `{}@{}` not found in index",
-                package_name,
-                constraints
-            )
-        })?;
+        let pkg = index
+            .crate_(package_name)
+            .ok_or_else(|| anyhow!("Package `{}@{}` not found in index", package_name, range))?;
 
         Ok(pkg
             .versions()
@@ -33,15 +29,13 @@ impl PackageManager for CargoPackageManager {
 
                 (ver, v.dependencies().to_vec())
             })
-            .filter(|(v, _)| constraints.matches(v))
+            .filter(|(v, _)| range.contains(v))
             .map(|(ver, deps)| {
                 let deps = deps
                     .iter()
                     .map(|d| PackageConstraint {
                         name: d.crate_name().into(),
-                        range: d
-                            .requirement()
-                            .parse()
+                        range: Semver::parse_range(d.requirement())
                             .expect("invalid version requirenment"),
                     })
                     .collect();

@@ -7,27 +7,24 @@ use std::{
     time::Instant,
 };
 
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashSet;
 use anyhow::{Context, Result};
-use async_recursion::async_recursion;
 use auto_impl::auto_impl;
-use futures::{stream::FuturesUnordered, StreamExt};
 use pubgrub::{
     range::Range,
     solver::{resolve, DependencyProvider},
 };
-use semver::{Version, VersionReq};
-use tokio::sync::RwLock;
-use tracing::{debug, info};
+use semver::Version;
+use tracing::info;
 
 use super::PackageName;
 
 #[auto_impl(Arc, Box, &)]
 pub trait PackageManager: Send + Sync {
-    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageInfo>>;
+    fn resolve(&self, package_name: &str, constraints: &Range<Semver>) -> Result<Vec<PackageInfo>>;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Constraints {
     /// Only packages with these names will be considered.
     pub candidate_packages: Vec<PackageName>,
@@ -39,21 +36,16 @@ pub struct Constraints {
 #[derive(Debug, Clone)]
 pub struct Solution {}
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageConstraint {
     pub name: PackageName,
-    pub range: VersionReq,
+    pub range: Range<Semver>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Semver(Version);
-
 impl Semver {
-    fn range(range: &VersionReq) -> Range<Self> {
-        todo!()
-    }
-
-    fn parse_range(range: &Range<Semver>) -> VersionReq {
+    pub(crate) fn parse_range(requirement: &str) -> Result<Range<Self>> {
         todo!()
     }
 }
@@ -92,15 +84,12 @@ impl pubgrub::version::Version for Semver {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageInfo {
     pub name: PackageName,
     pub version: Semver,
     pub deps: Vec<PackageConstraint>,
 }
-
-/// All versions of a **single** package.
-type Versions = Arc<Vec<PackageInfo>>;
 
 pub async fn solve(
     constraints: Arc<Constraints>,
@@ -109,8 +98,6 @@ pub async fn solve(
     let solver = Solver {
         constraints,
         pkg_mgr,
-        cached_pkgs: Default::default(),
-        resolution_started: Default::default(),
     };
 
     solver.solve().await
@@ -119,11 +106,6 @@ pub async fn solve(
 struct Solver {
     constraints: Arc<Constraints>,
     pkg_mgr: Arc<dyn PackageManager>,
-
-    cached_pkgs: RwLock<AHashMap<PackageConstraint, Versions>>,
-
-    /// Used to prevent infinite recursion of `resolve_pkg_recursively`.
-    resolution_started: RwLock<AHashSet<PackageName>>,
 }
 
 impl Solver {
@@ -209,8 +191,7 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
                     deps: Default::default(),
                 }]
             } else {
-                self.inner
-                    .resolve(name, &Semver::parse_range(parsed_range))?
+                self.inner.resolve(name, parsed_range)?
             };
 
             versions.sort_by_cached_key(|v| v.version.clone());
@@ -250,17 +231,14 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
                 self.root_deps
                     .compatible_packages
                     .iter()
-                    .map(|c| (c.name.clone(), Semver::range(&c.range)))
+                    .map(|c| (c.name.clone(), c.range.clone()))
                     .collect(),
             ));
         }
 
-        let pkg = self.inner.resolve(
-            &package,
-            &VersionReq {
-                comparators: vec![format!("={version}").parse()?],
-            },
-        )?;
+        let pkg = self
+            .inner
+            .resolve(&package, &Range::exact(version.clone()))?;
 
         if pkg.is_empty() {
             Err(anyhow::anyhow!("package `{}` does not exist", package))?
@@ -269,12 +247,7 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
         let map = pkg[0]
             .deps
             .iter()
-            .map(|pkg| {
-                (
-                    PackageName::from(pkg.name.clone()),
-                    Semver::range(&pkg.range),
-                )
-            })
+            .map(|pkg| (PackageName::from(pkg.name.clone()), pkg.range.clone()))
             .collect::<pubgrub::type_aliases::Map<_, _>>();
 
         Ok(pubgrub::solver::Dependencies::Known(map))

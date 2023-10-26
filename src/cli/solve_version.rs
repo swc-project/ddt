@@ -2,11 +2,12 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use clap::Args;
+use pubgrub::range::Range;
 
 use crate::{
     semver::{
         cargo::CargoPackageManager,
-        solver::{solve, Constraints, PackageConstraint},
+        solver::{solve, Constraints, PackageConstraint, Semver},
     },
     util::wrap,
 };
@@ -28,7 +29,7 @@ impl SolveVersionsCommand {
                     ],
                     compatible_packages: vec![PackageConstraint {
                         name: "swc_core".into(),
-                        range: "0.79.0".parse().unwrap(),
+                        range: Range::exact("0.79.0".parse::<Semver>()?),
                     }],
                 }),
                 Arc::new(CargoPackageManager),
