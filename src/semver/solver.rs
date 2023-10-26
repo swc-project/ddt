@@ -7,7 +7,7 @@ use std::{
     time::Instant,
 };
 
-use ahash::AHashSet;
+use ahash::{AHashMap, AHashSet};
 use anyhow::{Context, Result};
 use auto_impl::auto_impl;
 use pubgrub::{
@@ -211,11 +211,17 @@ struct PkgMgr {
 }
 
 impl DependencyProvider<PackageName, Semver> for PkgMgr {
+    /// Pub chooses the latest matching version of the package with the fewest
+    /// versions that match the outstanding constraint. This tends to find
+    /// conflicts earlier if any exist, since these packages will run out of
+    /// versions to try more quickly. But there's likely room for improvement in
+    /// these heuristics.
     fn choose_package_version<T: Borrow<PackageName>, U: Borrow<Range<Semver>>>(
         &self,
         potential_packages: impl Iterator<Item = (T, U)>,
     ) -> std::result::Result<(T, Option<Semver>), Box<dyn std::error::Error>> {
-        let mut highest = None;
+        let mut highest = AHashMap::default();
+        let mut count = AHashMap::default();
 
         let potential_packages = potential_packages.collect::<Vec<_>>();
 
@@ -229,6 +235,11 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
         for (pkg, range) in potential_packages {
             let name: &PackageName = pkg.borrow();
             let parsed_range: &Range<Semver> = range.borrow();
+
+            count
+                .entry(name.clone())
+                .and_modify(|c| *c += 1)
+                .or_insert(1);
 
             info!(%name, %parsed_range, "Resolving package");
 
@@ -247,18 +258,28 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
             let new_highest = versions.into_iter().max_by_key(|info| info.version.clone());
 
             if let Some(info) = new_highest {
-                match &mut highest {
+                let highest = highest.entry(info.name.clone()).or_default();
+
+                match highest {
                     Some((_, Some(highest_version))) => {
                         if info.version > *highest_version {
                             *highest_version = info.version.clone();
                         }
                     }
                     _ => {
-                        highest = Some((pkg, Some(info.version.clone())));
+                        *highest = Some((pkg, Some(info.version.clone())));
                     }
                 }
             }
         }
+
+        let pkg_with_max_count = count
+            .into_iter()
+            .max_by_key(|(_, count)| *count)
+            .map(|(pkg, _)| pkg)
+            .unwrap();
+
+        let highest = highest.remove(&pkg_with_max_count).unwrap();
 
         match highest {
             Some(v) => Ok(v),
