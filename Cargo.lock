@@ -403,6 +403,7 @@ dependencies = [
  "inferno",
  "is_executable",
  "once_cell",
+ "pubgrub",
  "rayon",
  "regex",
  "semver",
@@ -1820,6 +1821,16 @@ name = "prodash"
 version = "25.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d67eb4220992a4a052a4bb03cf776e493ecb1a3a36bab551804153d63486af7"
+
+[[package]]
+name = "pubgrub"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdd14552ad5f5d743a323c10d576f26822a044355d6601f377d813ece46f38fd"
+dependencies = [
+ "rustc-hash",
+ "thiserror",
+]
 
 [[package]]
 name = "quick-xml"
