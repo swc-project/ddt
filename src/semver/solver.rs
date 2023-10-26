@@ -8,12 +8,12 @@ use std::{
 };
 
 use ahash::{AHashMap, AHashSet};
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
-use pubgrub::solver::DependencyProvider;
+use pubgrub::{range::Range, solver::DependencyProvider, type_aliases::Map};
 use semver::{Version, VersionReq};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
@@ -45,6 +45,12 @@ pub struct PackageConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Semver(Version);
+
+impl Semver {
+    fn range(range: &VersionReq) -> Range<Self> {
+        todo!()
+    }
+}
 
 impl Deref for Semver {
     type Target = Version;
@@ -313,6 +319,28 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
         pubgrub::solver::Dependencies<PackageName, Semver>,
         Box<dyn std::error::Error>,
     > {
-        self.0.resolve(package_name, constraints)
+        let pkg = self.0.resolve(
+            &package,
+            &VersionReq {
+                comparators: vec![format!("={version}").parse()?],
+            },
+        )?;
+
+        if pkg.is_empty() {
+            Err(anyhow::anyhow!("package `{}` does not exist", package))?
+        }
+
+        let map = pkg[0]
+            .deps
+            .iter()
+            .map(|pkg| {
+                (
+                    PackageName::from(pkg.name.clone()),
+                    Semver::range(&pkg.range),
+                )
+            })
+            .collect::<pubgrub::type_aliases::Map<_, _>>();
+
+        Ok(pubgrub::solver::Dependencies::Known(map))
     }
 }
