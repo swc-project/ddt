@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use semver::VersionReq;
 
-use super::solver::{PackageConstraint, PackageManager, PackageVersion};
+use super::solver::{PackageConstraint, PackageManager, PackageVersion, Semver};
 
 #[derive(Debug, Default)]
 pub struct CargoPackageManager;
@@ -35,7 +35,7 @@ impl PackageManager for CargoPackageManager {
             .versions()
             .iter()
             .map(|v| {
-                let ver = v.version().parse().expect("invalid version");
+                let ver = v.version().parse::<Semver>().expect("invalid version");
 
                 (ver, v.dependencies().to_vec())
             })

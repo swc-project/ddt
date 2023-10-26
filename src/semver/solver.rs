@@ -1,4 +1,10 @@
-use std::{sync::Arc, time::Instant};
+use std::{
+    fmt::{Display, Formatter},
+    ops::Deref,
+    str::FromStr,
+    sync::Arc,
+    time::Instant,
+};
 
 use ahash::{AHashMap, AHashSet};
 use anyhow::{Context, Result};
@@ -6,6 +12,7 @@ use async_recursion::async_recursion;
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
+use pubgrub::solver::DependencyProvider;
 use semver::{Version, VersionReq};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
@@ -40,10 +47,35 @@ pub struct PackageConstraint {
     pub range: VersionReq,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Semver(Version);
+
+impl Deref for Semver {
+    type Target = Version;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for Semver {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl FromStr for Semver {
+    type Err = <Version as FromStr>::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(Version::parse(s)?))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackageVersion {
     pub name: PackageName,
-    pub version: Version,
+    pub version: Semver,
     pub deps: Vec<PackageConstraint>,
 }
 
@@ -251,4 +283,14 @@ impl Solver {
             .map(PackageName::from)
             .collect())
     }
+}
+
+struct PkgMgr(Arc<dyn PackageManager>);
+
+impl DependencyProvider<PackageName, Semver> for PkgMgr {}
+
+impl pubgrub::version::Version for Semver {
+    fn lowest() -> Self {}
+
+    fn bump(&self) -> Self {}
 }
