@@ -72,6 +72,18 @@ impl FromStr for Semver {
     }
 }
 
+impl pubgrub::version::Version for Semver {
+    fn lowest() -> Self {
+        Self(Version::new(0, 0, 0))
+    }
+
+    fn bump(&self) -> Self {
+        let mut new = self.clone();
+        new.0.patch += 1;
+        new
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PackageVersion {
     pub name: PackageName,
@@ -288,9 +300,3 @@ impl Solver {
 struct PkgMgr(Arc<dyn PackageManager>);
 
 impl DependencyProvider<PackageName, Semver> for PkgMgr {}
-
-impl pubgrub::version::Version for Semver {
-    fn lowest() -> Self {}
-
-    fn bump(&self) -> Self {}
-}
