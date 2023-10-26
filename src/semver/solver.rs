@@ -219,7 +219,12 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
 
         let potential_packages = potential_packages.collect::<Vec<_>>();
 
-        let _tracing = tracing::span!(tracing::Level::TRACE, "choose_package_version").entered();
+        let _tracing = tracing::span!(
+            tracing::Level::ERROR,
+            "choose_package_version",
+            len = potential_packages.len(),
+        )
+        .entered();
 
         for (pkg, range) in potential_packages {
             let name: &PackageName = pkg.borrow();
