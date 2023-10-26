@@ -127,25 +127,6 @@ struct Solver {
 }
 
 impl Solver {
-    async fn get_pkg(&self, c: &PackageConstraint) -> Result<Versions> {
-        if let Some(pkgs) = self.cached_pkgs.read().await.get(c) {
-            return Ok(pkgs.clone());
-        }
-
-        debug!("Resolving package `{}`", c.name);
-
-        let versions = self.pkg_mgr.resolve(&c.name, &c.range)?;
-
-        let versions = Arc::new(versions);
-
-        self.cached_pkgs
-            .write()
-            .await
-            .insert(c.clone(), versions.clone());
-
-        Ok(versions)
-    }
-
     #[tracing::instrument(skip_all)]
     async fn solve(&self) -> Result<Solution> {
         self.solver_inner().await
@@ -175,6 +156,8 @@ impl Solver {
         };
 
         dbg!(&interesing_pkgs);
+
+        dbg!(&solution);
 
         Ok(Solution {})
     }
@@ -219,13 +202,16 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
             let name: &PackageName = pkg.borrow();
             let parsed_range: &Range<Semver> = range.borrow();
 
-            if name == "@@root" {
-                continue;
-            }
-
-            let mut versions = self
-                .inner
-                .resolve(name, &Semver::parse_range(parsed_range))?;
+            let mut versions = if name == "@@root" {
+                vec![PackageInfo {
+                    name: name.clone(),
+                    version: "0.0.0".parse().unwrap(),
+                    deps: Default::default(),
+                }]
+            } else {
+                self.inner
+                    .resolve(name, &Semver::parse_range(parsed_range))?
+            };
 
             versions.sort_by_cached_key(|v| v.version.clone());
 
