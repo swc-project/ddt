@@ -1,4 +1,5 @@
 use std::{
+    borrow::Borrow,
     fmt::{Display, Formatter},
     ops::Deref,
     str::FromStr,
@@ -19,14 +20,9 @@ use tracing::{debug, info};
 
 use super::{constraints::ConstraintStorage, PackageName};
 
-#[async_trait]
 #[auto_impl(Arc, Box, &)]
 pub trait PackageManager: Send + Sync {
-    async fn resolve(
-        &self,
-        package_name: &str,
-        constraints: &VersionReq,
-    ) -> Result<Vec<PackageVersion>>;
+    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageVersion>>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -126,7 +122,7 @@ impl Solver {
 
         debug!("Resolving package `{}`", c.name);
 
-        let versions = self.pkg_mgr.resolve(&c.name, &c.range).await?;
+        let versions = self.pkg_mgr.resolve(&c.name, &c.range)?;
 
         let versions = Arc::new(versions);
 
@@ -299,4 +295,23 @@ impl Solver {
 
 struct PkgMgr(Arc<dyn PackageManager>);
 
-impl DependencyProvider<PackageName, Semver> for PkgMgr {}
+impl DependencyProvider<PackageName, Semver> for PkgMgr {
+    fn choose_package_version<T: Borrow<PackageName>, U: Borrow<pubgrub::range::Range<Semver>>>(
+        &self,
+        potential_packages: impl Iterator<Item = (T, U)>,
+    ) -> std::result::Result<(T, Option<Semver>), Box<dyn std::error::Error>> {
+        let mut selected = vec![];
+
+        for pkg in potential_packages {}
+    }
+
+    fn get_dependencies(
+        &self,
+        package: &PackageName,
+        version: &Semver,
+    ) -> std::result::Result<
+        pubgrub::solver::Dependencies<PackageName, Semver>,
+        Box<dyn std::error::Error>,
+    > {
+    }
+}

@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use async_trait::async_trait;
 use semver::VersionReq;
 
 use super::solver::{PackageConstraint, PackageManager, PackageVersion, Semver};
@@ -7,13 +6,8 @@ use super::solver::{PackageConstraint, PackageManager, PackageVersion, Semver};
 #[derive(Debug, Default)]
 pub struct CargoPackageManager;
 
-#[async_trait]
 impl PackageManager for CargoPackageManager {
-    async fn resolve(
-        &self,
-        package_name: &str,
-        constraints: &VersionReq,
-    ) -> Result<Vec<PackageVersion>> {
+    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageVersion>> {
         if package_name == "std" || package_name == "core" {
             return Ok(vec![PackageVersion {
                 name: package_name.into(),
