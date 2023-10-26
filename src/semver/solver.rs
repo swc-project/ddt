@@ -14,7 +14,7 @@ use pubgrub::{
     range::Range,
     solver::{resolve, DependencyProvider},
 };
-use semver::Version;
+use semver::{Version, VersionReq};
 use tracing::info;
 
 use super::PackageName;
@@ -46,7 +46,39 @@ pub struct PackageConstraint {
 pub struct Semver(Version);
 impl Semver {
     pub(crate) fn parse_range(requirement: &str) -> Result<Range<Self>> {
-        todo!()
+        let version_req = VersionReq::parse(requirement)
+            .with_context(|| format!("failed to parse version requirement `{}`", requirement))?;
+
+        let mut range = Range::any();
+
+        for c in version_req.comparators {
+            use pubgrub::version::Version;
+
+            let ver = semver::Version::new(
+                c.major,
+                c.minor.unwrap_or_default(),
+                c.patch.unwrap_or_default(),
+            );
+
+            let new_range = match c.op {
+                semver::Op::Exact => Range::exact(Self(ver)),
+                semver::Op::Greater => Range::higher_than(Self(ver)),
+                semver::Op::GreaterEq => Range::strictly_lower_than(Self(ver)).negate(),
+                semver::Op::Less => Range::strictly_lower_than(Self(ver)),
+                semver::Op::LessEq => Range::strictly_lower_than(Self(ver).bump()),
+                semver::Op::Tilde => {
+                    todo!("~version")
+                }
+                semver::Op::Caret => Range::higher_than(Self(ver)),
+                semver::Op::Wildcard => Range::any(),
+                _ => {
+                    unimplemented!("{:?}", c.op)
+                }
+            };
+            range = range.intersection(&new_range);
+        }
+
+        Ok(range)
     }
 }
 
