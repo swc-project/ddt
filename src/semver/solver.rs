@@ -217,9 +217,15 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
     ) -> std::result::Result<(T, Option<Semver>), Box<dyn std::error::Error>> {
         let mut highest = None;
 
+        let potential_packages = potential_packages.collect::<Vec<_>>();
+
+        let _tracing = tracing::span!(tracing::Level::TRACE, "choose_package_version").entered();
+
         for (pkg, range) in potential_packages {
             let name: &PackageName = pkg.borrow();
             let parsed_range: &Range<Semver> = range.borrow();
+
+            info!(%name, %parsed_range, "Resolving package");
 
             let mut versions = if name == "@@root" {
                 vec![PackageInfo {
