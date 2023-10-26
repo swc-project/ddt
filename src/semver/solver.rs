@@ -278,7 +278,7 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
             .resolve(&package, &Range::exact(version.clone()))?;
 
         if pkg.is_empty() {
-            Err(anyhow::anyhow!("package `{}` does not exist", package))?
+            return Ok(pubgrub::solver::Dependencies::Unknown);
         }
 
         let map = pkg[0]
