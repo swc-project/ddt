@@ -1,15 +1,15 @@
 use anyhow::{anyhow, Result};
 use semver::VersionReq;
 
-use super::solver::{PackageConstraint, PackageManager, PackageVersion, Semver};
+use super::solver::{PackageConstraint, PackageInfo, PackageManager, Semver};
 
 #[derive(Debug, Default)]
 pub struct CargoPackageManager;
 
 impl PackageManager for CargoPackageManager {
-    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageVersion>> {
+    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageInfo>> {
         if package_name == "std" || package_name == "core" {
-            return Ok(vec![PackageVersion {
+            return Ok(vec![PackageInfo {
                 name: package_name.into(),
                 version: "1.0.0".parse().unwrap(),
                 deps: Default::default(),
@@ -46,7 +46,7 @@ impl PackageManager for CargoPackageManager {
                     })
                     .collect();
 
-                PackageVersion {
+                PackageInfo {
                     name: package_name.into(),
                     version: ver,
                     deps,

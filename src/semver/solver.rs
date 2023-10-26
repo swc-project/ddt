@@ -22,7 +22,7 @@ use super::{constraints::ConstraintStorage, PackageName};
 
 #[auto_impl(Arc, Box, &)]
 pub trait PackageManager: Send + Sync {
-    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageVersion>>;
+    fn resolve(&self, package_name: &str, constraints: &VersionReq) -> Result<Vec<PackageInfo>>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -81,14 +81,14 @@ impl pubgrub::version::Version for Semver {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PackageVersion {
+pub struct PackageInfo {
     pub name: PackageName,
     pub version: Semver,
     pub deps: Vec<PackageConstraint>,
 }
 
 /// All versions of a **single** package.
-type Versions = Arc<Vec<PackageVersion>>;
+type Versions = Arc<Vec<PackageInfo>>;
 
 pub async fn solve(
     constraints: Arc<Constraints>,
@@ -189,7 +189,7 @@ impl Solver {
     async fn resolve_deps(
         &self,
         name: PackageName,
-        pkg: PackageVersion,
+        pkg: PackageInfo,
         parent_constraints: Arc<ConstraintStorage>,
     ) -> Result<()> {
         let mut dep_constraints = ConstraintStorage::new(parent_constraints);
@@ -313,5 +313,6 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
         pubgrub::solver::Dependencies<PackageName, Semver>,
         Box<dyn std::error::Error>,
     > {
+        self.0.resolve(package_name, constraints)
     }
 }
