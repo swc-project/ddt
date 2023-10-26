@@ -8,12 +8,11 @@ use std::{
 };
 
 use ahash::{AHashMap, AHashSet};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use async_recursion::async_recursion;
-use async_trait::async_trait;
 use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
-use pubgrub::{range::Range, solver::DependencyProvider, type_aliases::Map};
+use pubgrub::{range::Range, solver::DependencyProvider};
 use semver::{Version, VersionReq};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
@@ -310,20 +309,33 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
         &self,
         potential_packages: impl Iterator<Item = (T, U)>,
     ) -> std::result::Result<(T, Option<Semver>), Box<dyn std::error::Error>> {
-        let mut selected = None;
+        let mut highest = None;
 
         for (pkg, range) in potential_packages {
-            let pkg: &PackageName = pkg.borrow();
-            let range: &Range<Semver> = range.borrow();
+            let name: &PackageName = pkg.borrow();
+            let parsed_range: &Range<Semver> = range.borrow();
 
-            let mut versions = self.0.resolve(pkg, &Semver::parse_range(range))?;
+            let mut versions = self.0.resolve(name, &Semver::parse_range(parsed_range))?;
 
-            versions.sort_by_key(|v| &v.version);
+            versions.sort_by_cached_key(|v| v.version.clone());
 
-            let highest;
+            let new_highest = versions.into_iter().max_by_key(|info| info.version.clone());
+
+            if let Some(info) = new_highest {
+                match &mut highest {
+                    Some((_, Some(highest_version))) => {
+                        if info.version > *highest_version {
+                            *highest_version = info.version.clone();
+                        }
+                    }
+                    _ => {
+                        highest = Some((pkg, Some(info.version.clone())));
+                    }
+                }
+            }
         }
 
-        match selected {
+        match highest {
             Some(v) => Ok(v),
             None => Err(anyhow::anyhow!("package does not exist"))?,
         }
