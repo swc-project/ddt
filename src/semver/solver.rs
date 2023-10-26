@@ -12,12 +12,15 @@ use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
-use pubgrub::{range::Range, solver::DependencyProvider};
+use pubgrub::{
+    range::Range,
+    solver::{resolve, DependencyProvider},
+};
 use semver::{Version, VersionReq};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use super::{constraints::ConstraintStorage, PackageName};
+use super::PackageName;
 
 #[auto_impl(Arc, Box, &)]
 pub trait PackageManager: Send + Sync {
@@ -143,101 +146,6 @@ impl Solver {
         Ok(versions)
     }
 
-    #[tracing::instrument(skip(self, parent_constraints), fields(name = %name))]
-    #[async_recursion]
-    async fn resolve_pkg_recursively(
-        &self,
-        name: PackageName,
-        parent_constraints: Arc<ConstraintStorage>,
-    ) -> Result<()> {
-        let pkg_constraints = parent_constraints
-            .get(&name)
-            .cloned()
-            .unwrap_or_else(|| panic!("the constraint for package `{}` does not exist", name));
-
-        if !self.resolution_started.write().await.insert(name.clone()) {
-            return Ok(());
-        }
-
-        debug!("Resolving package `{}` recursively", name);
-
-        let pkg = self
-            .get_pkg(&PackageConstraint {
-                name: name.clone(),
-                range: pkg_constraints,
-            })
-            .await
-            .with_context(|| {
-                format!("failed to fetch package data to resolve {name} recursively")
-            })?;
-
-        let futures = FuturesUnordered::new();
-
-        for pkg in pkg.iter() {
-            let name = name.clone();
-            let pkg = pkg.clone();
-            let parent_constraints = parent_constraints.clone();
-
-            futures.push(async move {
-                self.resolve_deps(name.clone(), pkg, parent_constraints)
-                    .await
-            });
-        }
-
-        let futures = futures.collect::<Vec<_>>().await;
-
-        for f in futures {
-            f?;
-        }
-
-        Ok(())
-    }
-
-    #[tracing::instrument(skip_all)]
-    #[async_recursion]
-    async fn resolve_deps(
-        &self,
-        name: PackageName,
-        pkg: PackageInfo,
-        parent_constraints: Arc<ConstraintStorage>,
-    ) -> Result<()> {
-        let mut dep_constraints = ConstraintStorage::new(parent_constraints);
-
-        for dep in pkg.deps.iter() {
-            dep_constraints.insert(dep.name.clone(), dep.range.clone());
-        }
-
-        let dep_constraints = dep_constraints.freeze();
-
-        let futures = FuturesUnordered::new();
-
-        for dep in pkg.deps.iter() {
-            let name = name.clone();
-            let dep_name = dep.name.clone();
-            let dep_constraints = dep_constraints.clone();
-
-            futures.push(async move {
-                self.resolve_pkg_recursively(dep_name.clone(), dep_constraints)
-                    .await
-                    .with_context(|| {
-                        format!("failed to resolve a dependency package `{dep_name}` of `{name}`")
-                    })
-            });
-        }
-
-        let futures = futures.collect::<Vec<_>>().await;
-
-        ConstraintStorage::unfreeze(dep_constraints)
-            .remove_parent()
-            .await;
-
-        for f in futures {
-            f?;
-        }
-
-        Ok(())
-    }
-
     #[tracing::instrument(skip_all)]
     async fn solve(&self) -> Result<Solution> {
         self.solver_inner().await
@@ -247,22 +155,15 @@ impl Solver {
         info!("Solving versions using Solver");
 
         let start = Instant::now();
-        let constraints = {
-            let mut constraints = ConstraintStorage::root();
-
-            for constraint in self.constraints.compatible_packages.iter() {
-                constraints.insert(constraint.name.clone(), constraint.range.clone());
-            }
-
-            let constraints = constraints.freeze();
-
-            for pkg in self.constraints.compatible_packages.iter() {
-                self.resolve_pkg_recursively(pkg.name.clone(), constraints.clone())
-                    .await?;
-            }
-
-            ConstraintStorage::unfreeze(constraints)
-        };
+        let solution = resolve(
+            &PkgMgr {
+                inner: self.pkg_mgr.clone(),
+                root_deps: self.constraints.clone(),
+            },
+            "@@root".into(),
+            "0.0.0".parse::<Semver>().unwrap(),
+        )
+        .unwrap();
         info!("Resolved recursively in {:?}", start.elapsed());
 
         // dbg!(&constraints);
@@ -302,7 +203,10 @@ impl Solver {
     }
 }
 
-struct PkgMgr(Arc<dyn PackageManager>);
+struct PkgMgr {
+    inner: Arc<dyn PackageManager>,
+    root_deps: Arc<Constraints>,
+}
 
 impl DependencyProvider<PackageName, Semver> for PkgMgr {
     fn choose_package_version<T: Borrow<PackageName>, U: Borrow<Range<Semver>>>(
@@ -315,7 +219,13 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
             let name: &PackageName = pkg.borrow();
             let parsed_range: &Range<Semver> = range.borrow();
 
-            let mut versions = self.0.resolve(name, &Semver::parse_range(parsed_range))?;
+            if name == "@@root" {
+                continue;
+            }
+
+            let mut versions = self
+                .inner
+                .resolve(name, &Semver::parse_range(parsed_range))?;
 
             versions.sort_by_cached_key(|v| v.version.clone());
 
@@ -349,7 +259,17 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
         pubgrub::solver::Dependencies<PackageName, Semver>,
         Box<dyn std::error::Error>,
     > {
-        let pkg = self.0.resolve(
+        if package == "@@root" {
+            return Ok(pubgrub::solver::Dependencies::Known(
+                self.root_deps
+                    .compatible_packages
+                    .iter()
+                    .map(|c| (c.name.clone(), Semver::range(&c.range)))
+                    .collect(),
+            ));
+        }
+
+        let pkg = self.inner.resolve(
             &package,
             &VersionReq {
                 comparators: vec![format!("={version}").parse()?],
