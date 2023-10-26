@@ -50,6 +50,10 @@ impl Semver {
     fn range(range: &VersionReq) -> Range<Self> {
         todo!()
     }
+
+    fn parse_range(range: &Range<Semver>) -> VersionReq {
+        todo!()
+    }
 }
 
 impl Deref for Semver {
@@ -302,13 +306,27 @@ impl Solver {
 struct PkgMgr(Arc<dyn PackageManager>);
 
 impl DependencyProvider<PackageName, Semver> for PkgMgr {
-    fn choose_package_version<T: Borrow<PackageName>, U: Borrow<pubgrub::range::Range<Semver>>>(
+    fn choose_package_version<T: Borrow<PackageName>, U: Borrow<Range<Semver>>>(
         &self,
         potential_packages: impl Iterator<Item = (T, U)>,
     ) -> std::result::Result<(T, Option<Semver>), Box<dyn std::error::Error>> {
-        let mut selected = vec![];
+        let mut selected = None;
 
-        for pkg in potential_packages {}
+        for (pkg, range) in potential_packages {
+            let pkg: &PackageName = pkg.borrow();
+            let range: &Range<Semver> = range.borrow();
+
+            let mut versions = self.0.resolve(pkg, &Semver::parse_range(range))?;
+
+            versions.sort_by_key(|v| &v.version);
+
+            let highest;
+        }
+
+        match selected {
+            Some(v) => Ok(v),
+            None => Err(anyhow::anyhow!("package does not exist"))?,
+        }
     }
 
     fn get_dependencies(
