@@ -314,7 +314,7 @@ impl DependencyProvider<PackageName, Range<Semver>> for PkgMgr {
 
         let pkg = self
             .inner
-            .resolve(&package, &Range::exact(version.clone()))?;
+            .resolve(&package, &Range::singleton(version.clone()))?;
 
         if pkg.is_empty() {
             return Ok(pubgrub::solver::Dependencies::Unknown);
