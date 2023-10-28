@@ -27,6 +27,23 @@ impl PackageManager for CargoPackageManager {
             .crate_(package_name)
             .ok_or_else(|| anyhow!("Package `{}@{}` not found in index", package_name, range))?;
 
+        let mut ignore_deps = false;
+
+        if let Some(only_repo) = self.target_repo.as_deref() {
+            if let Some(metadata) = self
+                .metadata
+                .packages
+                .iter()
+                .find(|p| p.name == package_name)
+            {
+                if let Some(repo) = metadata.repository.as_deref() {
+                    if only_repo == repo {
+                        ignore_deps = true;
+                    }
+                }
+            }
+        }
+
         Ok(pkg
             .versions()
             .iter()
@@ -38,10 +55,14 @@ impl PackageManager for CargoPackageManager {
                 }
                 Some((
                     ver,
-                    v.dependencies()
-                        .into_iter()
-                        .filter(|dep| dep.kind() == DependencyKind::Normal)
-                        .collect::<Vec<_>>(),
+                    if ignore_deps {
+                        vec![]
+                    } else {
+                        v.dependencies()
+                            .into_iter()
+                            .filter(|dep| dep.kind() == DependencyKind::Normal)
+                            .collect::<Vec<_>>()
+                    },
                 ))
             })
             .map(|(ver, deps)| {

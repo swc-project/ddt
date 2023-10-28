@@ -35,7 +35,7 @@ impl SolveVersionsCommand {
                 Arc::new(CargoPackageManager {
                     index: crates_index::GitIndex::new_cargo_default()
                         .context("failed to open crates.io git index")?,
-                    target_repo: Some("".into()),
+                    target_repo: Some("https://github.com/swc-project/swc".into()),
                     metadata: cargo_metadata::MetadataCommand::new()
                         .exec()
                         .context("failed to get cargo metadata")?,
