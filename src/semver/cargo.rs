@@ -12,6 +12,10 @@ pub struct CargoPackageManager {
     pub metadata: cargo_metadata::Metadata,
 }
 
+fn normalize_repo(s: &str) -> &str {
+    s.strip_suffix(".git").unwrap_or(s)
+}
+
 impl CargoPackageManager {
     /// Is in the current cargo workspace?
     fn is_interesting(&self, pkg: &str) -> bool {
@@ -20,7 +24,9 @@ impl CargoPackageManager {
             .iter()
             .find(|p| p.name == pkg)
             .and_then(|p| {
-                if p.repository == self.target_repo {
+                if p.repository.as_deref().map(normalize_repo)
+                    == self.target_repo.as_deref().map(normalize_repo)
+                {
                     Some(p)
                 } else {
                     None
