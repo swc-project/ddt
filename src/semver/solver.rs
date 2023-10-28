@@ -7,12 +7,12 @@ use std::{
     time::Instant,
 };
 
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashSet;
 use anyhow::{Context, Result};
 use auto_impl::auto_impl;
 use pubgrub::{
     range::Range,
-    solver::{resolve, DependencyProvider},
+    solver::{choose_package_with_fewest_versions, resolve, DependencyProvider},
 };
 use semver::{Version, VersionReq};
 use tracing::info;
@@ -227,71 +227,25 @@ impl DependencyProvider<PackageName, Range<Semver>> for PkgMgr {
         ),
         Box<dyn std::error::Error + Send + Sync>,
     > {
-        let mut highest = AHashMap::default();
-        let mut count = AHashMap::default();
+        Ok(choose_package_with_fewest_versions(
+            |name: &PackageName| {
+                if name == "@@root" {
+                    return vec!["0.0.0".parse().unwrap()].into_iter();
+                };
 
-        let potential_packages = potential_packages.collect::<Vec<_>>();
+                let versions = self
+                    .inner
+                    .resolve(name.borrow(), &Range::full())
+                    .unwrap_or_else(|_| Default::default());
 
-        let _tracing = tracing::span!(
-            tracing::Level::ERROR,
-            "choose_package_version",
-            len = potential_packages.len(),
-        )
-        .entered();
-
-        for (pkg, range) in potential_packages {
-            let name: &PackageName = pkg.borrow();
-            let parsed_range: &Range<Semver> = range.borrow();
-
-            count
-                .entry(name.clone())
-                .and_modify(|c| *c += 1)
-                .or_insert(1);
-
-            info!(%name, %parsed_range, "Resolving package");
-
-            let mut versions = if name == "@@root" {
-                vec![PackageInfo {
-                    name: name.clone(),
-                    version: "0.0.0".parse().unwrap(),
-                    deps: Default::default(),
-                }]
-            } else {
-                self.inner.resolve(name, parsed_range)?
-            };
-
-            versions.sort_by_cached_key(|v| v.version.clone());
-
-            let new_highest = versions.into_iter().max_by_key(|info| info.version.clone());
-
-            if let Some(info) = new_highest {
-                let highest = highest.entry(info.name.clone()).or_default();
-
-                match highest {
-                    Some((_, Some(highest_version))) => {
-                        if info.version > *highest_version {
-                            *highest_version = info.version.clone();
-                        }
-                    }
-                    _ => {
-                        *highest = Some((pkg, Some(info.version.clone())));
-                    }
-                }
-            }
-        }
-
-        let pkg_with_max_count = count
-            .into_iter()
-            .max_by_key(|(_, count)| *count)
-            .map(|(pkg, _)| pkg)
-            .unwrap();
-
-        let highest = highest.remove(&pkg_with_max_count).unwrap();
-
-        match highest {
-            Some(v) => Ok(v),
-            None => Err(anyhow::anyhow!("package does not exist"))?,
-        }
+                versions
+                    .into_iter()
+                    .map(|v| v.version)
+                    .collect::<Vec<_>>()
+                    .into_iter()
+            },
+            potential_packages,
+        ))
     }
 
     fn get_dependencies(
