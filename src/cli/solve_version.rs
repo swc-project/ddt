@@ -32,7 +32,7 @@ impl SolveVersionsCommand {
                         range: Range::singleton("0.79.0".parse::<Semver>()?),
                     }],
                 }),
-                Arc::new(CargoPackageManager),
+                Arc::new(CargoPackageManager::new()?),
             )
             .await?;
 

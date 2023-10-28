@@ -20,7 +20,7 @@ use tracing::info;
 use super::PackageName;
 
 #[auto_impl(Arc, Box, &)]
-pub trait PackageManager: Send + Sync {
+pub trait PackageManager {
     fn resolve(&self, package_name: &str, constraints: &Range<Semver>) -> Result<Vec<PackageInfo>>;
 }
 
