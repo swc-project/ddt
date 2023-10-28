@@ -1,3 +1,5 @@
+extern crate dudy_malloc;
+
 use anyhow::Result;
 use clap::Parser;
 use tracing::info;
