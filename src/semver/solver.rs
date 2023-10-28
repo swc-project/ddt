@@ -238,11 +238,12 @@ impl DependencyProvider<PackageName, Range<Semver>> for PkgMgr {
                     .resolve(name.borrow(), &Range::full())
                     .unwrap_or_else(|_| Default::default());
 
-                versions
-                    .into_iter()
-                    .map(|v| v.version)
-                    .collect::<Vec<_>>()
-                    .into_iter()
+                let mut versions = versions.into_iter().map(|v| v.version).collect::<Vec<_>>();
+
+                // Highest first
+                versions.sort_by(|a, b| b.cmp(a));
+
+                versions.into_iter()
             },
             potential_packages,
         ))
