@@ -1825,9 +1825,9 @@ checksum = "1d67eb4220992a4a052a4bb03cf776e493ecb1a3a36bab551804153d63486af7"
 [[package]]
 name = "pubgrub"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdd14552ad5f5d743a323c10d576f26822a044355d6601f377d813ece46f38fd"
+source = "git+https://github.com/pubgrub-rs/pubgrub.git?branch=dev#8951e37fe923a7edd5a78ed5f49f165b0fdc48de"
 dependencies = [
+ "log",
  "rustc-hash",
  "thiserror",
 ]
