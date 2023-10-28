@@ -19,6 +19,13 @@ impl CargoPackageManager {
             .packages
             .iter()
             .find(|p| p.name == pkg)
+            .and_then(|p| {
+                if p.repository == self.target_repo {
+                    Some(p)
+                } else {
+                    None
+                }
+            })
             .is_some()
     }
 }

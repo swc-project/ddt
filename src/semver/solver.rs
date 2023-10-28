@@ -271,6 +271,8 @@ impl DependencyProvider<PackageName, Range<Semver>> for PkgMgr {
             .inner
             .resolve(&package, &Range::singleton(version.clone()))?;
 
+        dbg!(&pkg);
+
         if pkg.is_empty() {
             return Ok(pubgrub::solver::Dependencies::Unknown);
         }

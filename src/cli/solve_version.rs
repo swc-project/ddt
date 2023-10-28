@@ -37,6 +37,7 @@ impl SolveVersionsCommand {
                         .context("failed to open crates.io git index")?,
                     target_repo: Some("https://github.com/swc-project/swc".into()),
                     metadata: cargo_metadata::MetadataCommand::new()
+                        .current_dir("/Users/kdy1/projects/s/plugins")
                         .exec()
                         .context("failed to get cargo metadata")?,
                 }),
