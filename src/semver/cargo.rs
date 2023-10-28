@@ -8,6 +8,8 @@ pub struct CargoPackageManager {
     pub index: crates_index::GitIndex,
 
     pub target_repo: Option<String>,
+
+    pub metadata: cargo_metadata::Metadata,
 }
 
 impl PackageManager for CargoPackageManager {
