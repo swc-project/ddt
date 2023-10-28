@@ -12,6 +12,16 @@ pub struct CargoPackageManager {
     pub metadata: cargo_metadata::Metadata,
 }
 
+impl CargoPackageManager {
+    fn is_interesting(&self, pkg: &str) -> bool {
+        self.metadata
+            .packages
+            .iter()
+            .find(|p| p.name == pkg)
+            .is_some()
+    }
+}
+
 impl PackageManager for CargoPackageManager {
     fn resolve(&self, package_name: &str, range: &Range<Semver>) -> Result<Vec<PackageInfo>> {
         if package_name == "std" || package_name == "core" {
@@ -27,23 +37,6 @@ impl PackageManager for CargoPackageManager {
             .crate_(package_name)
             .ok_or_else(|| anyhow!("Package `{}@{}` not found in index", package_name, range))?;
 
-        let mut ignore_deps = false;
-
-        if let Some(only_repo) = self.target_repo.as_deref() {
-            if let Some(metadata) = self
-                .metadata
-                .packages
-                .iter()
-                .find(|p| p.name == package_name)
-            {
-                if let Some(repo) = metadata.repository.as_deref() {
-                    if only_repo == repo {
-                        ignore_deps = true;
-                    }
-                }
-            }
-        }
-
         Ok(pkg
             .versions()
             .iter()
@@ -55,14 +48,11 @@ impl PackageManager for CargoPackageManager {
                 }
                 Some((
                     ver,
-                    if ignore_deps {
-                        vec![]
-                    } else {
-                        v.dependencies()
-                            .into_iter()
-                            .filter(|dep| dep.kind() == DependencyKind::Normal)
-                            .collect::<Vec<_>>()
-                    },
+                    v.dependencies()
+                        .into_iter()
+                        .filter(|dep| dep.kind() == DependencyKind::Normal)
+                        .filter(|dep| self.is_interesting(dep.crate_name()))
+                        .collect::<Vec<_>>(),
                 ))
             })
             .map(|(ver, deps)| {
