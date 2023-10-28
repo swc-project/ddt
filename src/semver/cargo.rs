@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use crates_index::DependencyKind;
 use pubgrub::range::Range;
 
 use super::solver::{PackageConstraint, PackageInfo, PackageManager, Semver};
@@ -27,7 +28,13 @@ impl PackageManager for CargoPackageManager {
             .map(|v| {
                 let ver = v.version().parse::<Semver>().expect("invalid version");
 
-                (ver, v.dependencies().to_vec())
+                (
+                    ver,
+                    v.dependencies()
+                        .into_iter()
+                        .filter(|dep| dep.kind() == DependencyKind::Normal)
+                        .collect::<Vec<_>>(),
+                )
             })
             .filter(|(v, _)| range.contains(v))
             .map(|(ver, deps)| {
