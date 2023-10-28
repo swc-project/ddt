@@ -29,7 +29,7 @@ impl SolveVersionsCommand {
                     ],
                     compatible_packages: vec![PackageConstraint {
                         name: "swc_core".into(),
-                        range: Range::exact("0.79.0".parse::<Semver>()?),
+                        range: Range::singleton("0.79.0".parse::<Semver>()?),
                     }],
                 }),
                 Arc::new(CargoPackageManager),

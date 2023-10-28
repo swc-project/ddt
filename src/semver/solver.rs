@@ -44,12 +44,13 @@ pub struct PackageConstraint {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Semver(Version);
+
 impl Semver {
     pub(crate) fn parse_range(requirement: &str) -> Result<Range<Self>> {
         let version_req = VersionReq::parse(requirement)
             .with_context(|| format!("failed to parse version requirement `{}`", requirement))?;
 
-        let mut range = Range::any();
+        let mut range = Range::full();
 
         for c in version_req.comparators {
             use pubgrub::version::Version;
@@ -61,9 +62,9 @@ impl Semver {
             );
 
             let new_range = match c.op {
-                semver::Op::Exact => Range::exact(Self(ver)),
+                semver::Op::Exact => Range::singleton(Self(ver)),
                 semver::Op::Greater => Range::higher_than(Self(ver)),
-                semver::Op::GreaterEq => Range::strictly_lower_than(Self(ver)).negate(),
+                semver::Op::GreaterEq => Range::strictly_lower_than(Self(ver)).complement(),
                 semver::Op::Less => Range::strictly_lower_than(Self(ver)),
                 semver::Op::LessEq => Range::strictly_lower_than(Self(ver).bump()),
                 semver::Op::Tilde => {
@@ -75,7 +76,7 @@ impl Semver {
                         .intersection(&Range::strictly_lower_than(Self(with_minor_bump)))
                 }
                 semver::Op::Caret => Range::higher_than(Self(ver)),
-                semver::Op::Wildcard => Range::any(),
+                semver::Op::Wildcard => Range::full(),
                 _ => {
                     unimplemented!("{:?}", c.op)
                 }
@@ -210,7 +211,7 @@ struct PkgMgr {
     root_deps: Arc<Constraints>,
 }
 
-impl DependencyProvider<PackageName, Semver> for PkgMgr {
+impl DependencyProvider<PackageName, Range<Semver>> for PkgMgr {
     /// Pub chooses the latest matching version of the package with the fewest
     /// versions that match the outstanding constraint. This tends to find
     /// conflicts earlier if any exist, since these packages will run out of
@@ -219,7 +220,13 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
     fn choose_package_version<T: Borrow<PackageName>, U: Borrow<Range<Semver>>>(
         &self,
         potential_packages: impl Iterator<Item = (T, U)>,
-    ) -> std::result::Result<(T, Option<Semver>), Box<dyn std::error::Error>> {
+    ) -> std::result::Result<
+        (
+            T,
+            Option<<Range<Semver> as pubgrub::version_set::VersionSet>::V>,
+        ),
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
         let mut highest = AHashMap::default();
         let mut count = AHashMap::default();
 
@@ -290,10 +297,10 @@ impl DependencyProvider<PackageName, Semver> for PkgMgr {
     fn get_dependencies(
         &self,
         package: &PackageName,
-        version: &Semver,
+        version: &<Range<Semver> as pubgrub::version_set::VersionSet>::V,
     ) -> std::result::Result<
-        pubgrub::solver::Dependencies<PackageName, Semver>,
-        Box<dyn std::error::Error>,
+        pubgrub::solver::Dependencies<PackageName, Range<Semver>>,
+        Box<dyn std::error::Error + Send + Sync>,
     > {
         if package == "@@root" {
             return Ok(pubgrub::solver::Dependencies::Known(
