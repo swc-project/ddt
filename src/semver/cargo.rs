@@ -13,6 +13,7 @@ pub struct CargoPackageManager {
 }
 
 impl CargoPackageManager {
+    /// Is in the current cargo workspace?
     fn is_interesting(&self, pkg: &str) -> bool {
         self.metadata
             .packages
