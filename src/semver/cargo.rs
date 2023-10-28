@@ -1,20 +1,13 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use crates_index::DependencyKind;
 use pubgrub::range::Range;
 
 use super::solver::{PackageConstraint, PackageInfo, PackageManager, Semver};
 
 pub struct CargoPackageManager {
-    index: crates_index::GitIndex,
-}
+    pub index: crates_index::GitIndex,
 
-impl CargoPackageManager {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
-            index: crates_index::GitIndex::new_cargo_default()
-                .context("failed to open crates.io git index")?,
-        })
-    }
+    pub target_repo: Option<String>,
 }
 
 impl PackageManager for CargoPackageManager {
@@ -35,18 +28,20 @@ impl PackageManager for CargoPackageManager {
         Ok(pkg
             .versions()
             .iter()
-            .map(|v| {
+            .filter_map(|v| {
                 let ver = v.version().parse::<Semver>().expect("invalid version");
 
-                (
+                if !range.contains(&ver) {
+                    return None;
+                }
+                Some((
                     ver,
                     v.dependencies()
                         .into_iter()
                         .filter(|dep| dep.kind() == DependencyKind::Normal)
                         .collect::<Vec<_>>(),
-                )
+                ))
             })
-            .filter(|(v, _)| range.contains(v))
             .map(|(ver, deps)| {
                 let deps = deps
                     .iter()

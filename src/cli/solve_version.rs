@@ -32,7 +32,11 @@ impl SolveVersionsCommand {
                         range: Range::singleton("0.79.0".parse::<Semver>()?),
                     }],
                 }),
-                Arc::new(CargoPackageManager::new()?),
+                Arc::new(CargoPackageManager {
+                    index: crates_index::GitIndex::new_cargo_default()
+                        .context("failed to open crates.io git index")?,
+                    target_repo: Some("".into()),
+                }),
             )
             .await?;
 
