@@ -4,7 +4,7 @@ use tokio::fs;
 
 use crate::util::{wrap, PrettyCmd};
 
-/// Some misc comamnds for git.
+/// Extra commands like auto-completion or self-update.
 #[derive(Debug, Args)]
 pub struct GitCommand {
     #[clap(subcommand)]
