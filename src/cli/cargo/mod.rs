@@ -5,7 +5,7 @@ use self::solve_semver::SolveVersionCommand;
 
 pub mod solve_semver;
 
-/// Extra commands like auto-completion or self-update.
+/// Command for cargo projects.
 #[derive(Debug, Args)]
 pub struct CargoCommand {
     #[clap(subcommand)]
