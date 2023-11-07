@@ -1,15 +1,12 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use self::{
-    extra::ExtraCommand, git::GitCommand, profile::ProfileCommand,
-    solve_version::SolveVersionsCommand,
-};
+use self::{cargo::CargoCommand, extra::ExtraCommand, git::GitCommand, profile::ProfileCommand};
 
+mod cargo;
 mod extra;
 mod git;
 mod profile;
-mod solve_version;
 mod util;
 
 #[derive(Debug, Parser)]
@@ -24,10 +21,10 @@ impl CliArgs {
             InnerCmd::Profile(cmd) => {
                 cmd.run().await?;
             }
-            InnerCmd::Git(cmd) => {
+            InnerCmd::Cargo(cmd) => {
                 cmd.run().await?;
             }
-            InnerCmd::SolveVersions(cmd) => {
+            InnerCmd::Git(cmd) => {
                 cmd.run().await?;
             }
             InnerCmd::X(cmd) => {
@@ -42,7 +39,7 @@ impl CliArgs {
 #[derive(Debug, Subcommand)]
 enum InnerCmd {
     Profile(ProfileCommand),
+    Cargo(CargoCommand),
     Git(GitCommand),
-    SolveVersions(SolveVersionsCommand),
     X(ExtraCommand),
 }

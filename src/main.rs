@@ -1,3 +1,5 @@
+extern crate dudy_malloc;
+
 use anyhow::Result;
 use clap::Parser;
 use tracing::info;
@@ -6,7 +8,6 @@ use crate::cli::CliArgs;
 
 mod cli;
 mod git;
-mod semver;
 mod util;
 
 #[tokio::main]
