@@ -758,7 +758,6 @@ dependencies = [
  "inferno",
  "is_executable",
  "once_cell",
- "pubgrub",
  "rayon",
  "regex",
  "semver",
@@ -3220,16 +3219,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pubgrub"
-version = "0.2.1"
-source = "git+https://github.com/pubgrub-rs/pubgrub.git?branch=dev#8951e37fe923a7edd5a78ed5f49f165b0fdc48de"
-dependencies = [
- "log",
- "rustc-hash",
- "thiserror",
-]
-
-[[package]]
 name = "pulldown-cmark"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4402,3 +4391,8 @@ name = "zeroize"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a0956f1ba7c7909bfb66c2e9e4124ab6f6482560f6628b5aaeba39207c9aad9"
+
+[[patch.unused]]
+name = "pubgrub"
+version = "0.2.1"
+source = "git+https://github.com/pubgrub-rs/pubgrub.git?branch=dev#8951e37fe923a7edd5a78ed5f49f165b0fdc48de"
