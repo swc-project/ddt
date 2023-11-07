@@ -6,6 +6,7 @@ use self::{
     solve_version::SolveVersionsCommand,
 };
 
+mod cargo;
 mod extra;
 mod git;
 mod profile;
