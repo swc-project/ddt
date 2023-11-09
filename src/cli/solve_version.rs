@@ -60,16 +60,17 @@ impl SolveVersionsCommand {
         let ws_pkg_names = ws
             .workspace_members
             .iter()
-            .map(|p| p.to_string())
-            .map(PackageName::from)
-            .collect::<AHashSet<_>>();
+            .map(|p| p.to_string().splitn(2, '0').next().unwrap().trim().into())
+            .collect::<AHashSet<PackageName>>();
 
         let ws_pkgs = ws
             .packages
             .iter()
-            .filter(|pkg| ws_pkg_names.contains(&pkg.name.clone().into()));
+            .filter(|pkg| ws_pkg_names.contains(&pkg.name.clone().into()))
+            .collect::<Vec<_>>();
 
         Ok(ws_pkgs
+            .into_iter()
             .flat_map(|pkg| pkg.dependencies.iter().map(|d| d.name.clone()))
             .map(PackageName::from)
             .collect())
