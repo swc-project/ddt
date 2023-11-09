@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use async_trait::async_trait;
 use semver::{Version, VersionReq};
 use serde::Deserialize;
@@ -26,8 +26,14 @@ impl PackageManager for CargoPackageManager {
         let v = body
             .lines()
             .into_iter()
-            .filter_map(|s| {
-                let line = serde_json::from_str::<Descriptor>(&s).expect("failed to parse json");
+            .filter_map(|line| {
+                let desc = serde_json::from_str::<Descriptor>(&line);
+                let line = match desc {
+                    Ok(v) => v,
+                    Err(err) => {
+                        return Some(Err(anyhow!("failed to parse line: {:?}\n{}", err, line)))
+                    }
+                };
 
                 if !constraints.matches(&line.vers) {
                     return None;
