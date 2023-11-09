@@ -4,10 +4,8 @@ use anyhow::{Context, Result};
 use clap::Args;
 
 use crate::{
-    semver::{
-        cargo::CargoPackageManager,
-        solver::{solve, Constraints, PackageConstraint},
-    },
+    package_manager::{cargo::CargoPackageManager, Dependency},
+    semver::solver::{solve, Constraints},
     util::wrap,
 };
 
@@ -26,7 +24,7 @@ impl SolveVersionsCommand {
                         "swc_ecma_ast".into(),
                         "swc_common".into(),
                     ],
-                    compatible_packages: vec![PackageConstraint {
+                    compatible_packages: vec![Dependency {
                         name: "swc_core".into(),
                         constraints: "0.79.0".parse().unwrap(),
                     }],

@@ -3,24 +3,12 @@ use std::{sync::Arc, time::Instant};
 use ahash::{AHashMap, AHashSet};
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
-use async_trait::async_trait;
-use auto_impl::auto_impl;
 use futures::{stream::FuturesUnordered, StreamExt};
-use semver::{Version, VersionReq};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use super::{constraints::ConstraintStorage, PackageName};
-
-#[async_trait]
-#[auto_impl(Arc, Box, &)]
-pub trait PackageManager: Send + Sync {
-    async fn resolve(
-        &self,
-        package_name: &str,
-        constraints: &VersionReq,
-    ) -> Result<Vec<PackageVersion>>;
-}
+use super::constraints::ConstraintStorage;
+use crate::package_manager::{Dependency, PackageManager, PackageName, PackageVersion, Versions};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Constraints {
@@ -28,33 +16,11 @@ pub struct Constraints {
     pub candidate_packages: Vec<PackageName>,
 
     /// These packages must be included in the solution.
-    pub compatible_packages: Vec<PackageConstraint>,
+    pub compatible_packages: Vec<Dependency>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Solution {}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PackageConstraint {
-    pub name: PackageName,
-    pub constraints: VersionReq,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PackageVersion {
-    pub name: PackageName,
-    pub version: Version,
-    pub deps: Vec<Dependency>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Dependency {
-    pub name: PackageName,
-    pub range: VersionReq,
-}
-
-/// All versions of a **single** package.
-type Versions = Arc<Vec<PackageVersion>>;
 
 pub async fn solve(
     constraints: Arc<Constraints>,
@@ -74,14 +40,14 @@ struct Solver {
     constraints: Arc<Constraints>,
     pkg_mgr: Arc<dyn PackageManager>,
 
-    cached_pkgs: RwLock<AHashMap<PackageConstraint, Versions>>,
+    cached_pkgs: RwLock<AHashMap<Dependency, Versions>>,
 
     /// Used to prevent infinite recursion of `resolve_pkg_recursively`.
     resolution_started: RwLock<AHashSet<PackageName>>,
 }
 
 impl Solver {
-    async fn get_pkg(&self, c: &PackageConstraint) -> Result<Versions> {
+    async fn get_pkg(&self, c: &Dependency) -> Result<Versions> {
         if let Some(pkgs) = self.cached_pkgs.read().await.get(c) {
             return Ok(pkgs.clone());
         }
@@ -89,8 +55,6 @@ impl Solver {
         debug!("Resolving package `{}`", c.name);
 
         let versions = self.pkg_mgr.resolve(&c.name, &c.constraints).await?;
-
-        let versions = Arc::new(versions);
 
         self.cached_pkgs
             .write()
@@ -119,7 +83,7 @@ impl Solver {
         debug!("Resolving package `{}` recursively", name);
 
         let pkg = self
-            .get_pkg(&PackageConstraint {
+            .get_pkg(&Dependency {
                 name: name.clone(),
                 constraints: pkg_constraints,
             })
@@ -161,7 +125,7 @@ impl Solver {
         let mut dep_constraints = ConstraintStorage::new(parent_constraints);
 
         for dep in pkg.deps.iter() {
-            dep_constraints.insert(dep.name.clone(), dep.range.clone());
+            dep_constraints.insert(dep.name.clone(), dep.constraints.clone());
         }
 
         let dep_constraints = dep_constraints.freeze();
