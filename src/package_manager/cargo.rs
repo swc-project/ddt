@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
-use semver::VersionReq;
+use semver::{Version, VersionReq};
+use serde::Deserialize;
 
-use super::{Dependency, PackageManager, PackageVersion, Versions};
+use super::{Dependency, PackageManager, PackageName, PackageVersion, Versions};
 
 #[derive(Debug, Default)]
 pub struct CargoPackageManager;
@@ -20,10 +21,35 @@ impl PackageManager for CargoPackageManager {
             }]));
         }
 
-        let body = reqwest::get("https://www.rust-lang.org")
-            .await?
-            .text()
-            .await?;
+        let body = reqwest::get(&build_url(package_name)).await?.text().await?;
+
+        let v = body
+            .lines()
+            .into_iter()
+            .filter_map(|s| {
+                let line = serde_json::from_str::<Descriptor>(&s).expect("failed to parse json");
+
+                if !constraints.matches(&line.vers) {
+                    return None;
+                }
+
+                Some(Ok(PackageVersion {
+                    name: line.name,
+                    version: line.vers,
+                    deps: line
+                        .deps
+                        .into_iter()
+                        .map(|d| Dependency {
+                            name: d.name,
+                            constraints: d.req,
+                        })
+                        .collect(),
+                }))
+            })
+            .collect::<Result<Vec<_>>>()
+            .with_context(|| format!("failed to parse index of {}", package_name))?;
+
+        Ok(Arc::new(v))
     }
 }
 
@@ -35,11 +61,24 @@ fn build_url(name: &str) -> String {
             let first_char = name.chars().next().unwrap();
             format!("https://index.crates.io/3/{first_char}/{name}")
         }
-        4 => {
+        _ => {
             let first_two = &name[0..2];
             let second_two = &name[2..4];
 
             format!("https://index.crates.io/4/{first_two}/{second_two}/{name}",)
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+struct Descriptor {
+    pub name: PackageName,
+    pub vers: Version,
+    pub deps: Vec<DepDescriptor>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DepDescriptor {
+    pub name: PackageName,
+    pub req: VersionReq,
 }
