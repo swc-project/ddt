@@ -192,7 +192,9 @@ impl Solver {
 
         // dbg!(&constraints);
 
-        let interesing_pkgs = self.constraints.candidate_packages.clone();
+        let mut interesing_pkgs = self.constraints.candidate_packages.clone();
+        interesing_pkgs.sort_by(|a, b| a.cmp(b));
+        interesing_pkgs.dedup();
 
         constraints.finalize().await;
 
