@@ -33,8 +33,10 @@ impl SolveVersionsCommand {
             )
             .await?;
 
-            println!("{:#?}", solution);
+            let s =
+                serde_json::to_string_pretty(&solution).context("failed to serialize solution")?;
 
+            println!("{}", s);
             Ok(())
         })
         .await
