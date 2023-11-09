@@ -4,6 +4,7 @@ use ahash::{AHashMap, AHashSet};
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use futures::{stream::FuturesUnordered, StreamExt};
+use semver::VersionReq;
 use serde::Serialize;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
@@ -202,7 +203,10 @@ impl Solver {
             packages: interesing_pkgs
                 .iter()
                 .map(|name| {
-                    let req = constraints.get(name).unwrap();
+                    let req = constraints
+                        .get(name)
+                        .cloned()
+                        .unwrap_or_else(|| VersionReq::STAR);
                     Dependency {
                         name: name.clone(),
                         constraints: req.clone(),
