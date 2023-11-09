@@ -1,7 +1,7 @@
-use string_cache::DefaultAtom;
+use hstr::Atom;
 
 pub mod cargo;
 pub mod constraints;
 pub mod solver;
 
-pub type PackageName = DefaultAtom;
+pub type PackageName = Atom;
