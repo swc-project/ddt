@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use ahash::AHashSet;
 use anyhow::{Context, Result};
 use clap::Args;
 
@@ -11,9 +12,13 @@ use crate::{
 
 #[derive(Debug, Args)]
 pub struct SolveVersionsCommand {
+    /// Only these packages will be included in the solution.
+    ///
+    /// Defaults to the direct dependencies of the current cargo workspace.
     #[clap(short = 'p', long = "package")]
     pub intersecting_packages: Vec<PackageName>,
 
+    /// Require these packages to be satisfied by the solution.
     #[clap(short = 'r', long = "require")]
     pub constraints: Vec<Dependency>,
 }
@@ -22,18 +27,16 @@ impl SolveVersionsCommand {
     pub async fn run(self) -> Result<()> {
         wrap(async move {
             //
+            let intersecting_packages = if self.intersecting_packages.is_empty() {
+                self.get_direct_deps_of_current_cargo_workspace()?
+            } else {
+                self.intersecting_packages
+            };
 
             let solution = solve(
                 Arc::new(Constraints {
-                    candidate_packages: vec![
-                        "swc_ecma_utils".into(),
-                        "swc_ecma_ast".into(),
-                        "swc_common".into(),
-                    ],
-                    compatible_packages: vec![Dependency {
-                        name: "swc_core".into(),
-                        constraints: "0.79.0".parse().unwrap(),
-                    }],
+                    candidate_packages: intersecting_packages,
+                    compatible_packages: self.constraints,
                 }),
                 Arc::new(CargoPackageManager),
             )
@@ -47,5 +50,28 @@ impl SolveVersionsCommand {
         })
         .await
         .context("failed to solve versions")
+    }
+
+    fn get_direct_deps_of_current_cargo_workspace(&self) -> Result<Vec<PackageName>> {
+        let ws = cargo_metadata::MetadataCommand::new()
+            .exec()
+            .context("failed to run `cargo metadata`")?;
+
+        let ws_pkg_names = ws
+            .workspace_members
+            .iter()
+            .map(|p| p.to_string())
+            .map(PackageName::from)
+            .collect::<AHashSet<_>>();
+
+        let ws_pkgs = ws
+            .packages
+            .iter()
+            .filter(|pkg| ws_pkg_names.contains(&pkg.name.clone().into()));
+
+        Ok(ws_pkgs
+            .flat_map(|pkg| pkg.dependencies.iter().map(|d| d.name.clone()))
+            .map(PackageName::from)
+            .collect())
     }
 }

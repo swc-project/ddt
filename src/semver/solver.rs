@@ -191,11 +191,7 @@ impl Solver {
 
         // dbg!(&constraints);
 
-        let interesing_pkgs = if !self.constraints.candidate_packages.is_empty() {
-            self.constraints.candidate_packages.clone()
-        } else {
-            self.get_direct_deps_of_current_cargo_workspace()?
-        };
+        let interesing_pkgs = self.constraints.candidate_packages.clone();
 
         constraints.finalize().await;
 
@@ -214,28 +210,5 @@ impl Solver {
                 })
                 .collect(),
         })
-    }
-
-    fn get_direct_deps_of_current_cargo_workspace(&self) -> Result<Vec<PackageName>> {
-        let ws = cargo_metadata::MetadataCommand::new()
-            .exec()
-            .context("failed to run `cargo metadata`")?;
-
-        let ws_pkg_names = ws
-            .workspace_members
-            .iter()
-            .map(|p| p.to_string())
-            .map(PackageName::from)
-            .collect::<AHashSet<_>>();
-
-        let ws_pkgs = ws
-            .packages
-            .iter()
-            .filter(|pkg| ws_pkg_names.contains(&pkg.name.clone().into()));
-
-        Ok(ws_pkgs
-            .flat_map(|pkg| pkg.dependencies.iter().map(|d| d.name.clone()))
-            .map(PackageName::from)
-            .collect())
     }
 }
