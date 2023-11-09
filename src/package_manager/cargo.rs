@@ -20,43 +20,26 @@ impl PackageManager for CargoPackageManager {
             }]));
         }
 
-        let index = crates_index::GitIndex::new_cargo_default()?;
-        let pkg = index.crate_(package_name).ok_or_else(|| {
-            anyhow!(
-                "Package `{}@{}` not found in index",
-                package_name,
-                constraints
-            )
-        })?;
+        let body = reqwest::get("https://www.rust-lang.org")
+            .await?
+            .text()
+            .await?;
+    }
+}
 
-        Ok(Arc::new(
-            pkg.versions()
-                .iter()
-                .map(|v| {
-                    let ver = v.version().parse().expect("invalid version");
+fn build_url(name: &str) -> String {
+    match name.len() {
+        1 => format!("https://index.crates.io/1/{name}"),
+        2 => format!("https://index.crates.io/2/{name}"),
+        3 => {
+            let first_char = name.chars().next().unwrap();
+            format!("https://index.crates.io/3/{first_char}/{name}")
+        }
+        4 => {
+            let first_two = &name[0..2];
+            let second_two = &name[2..4];
 
-                    (ver, v.dependencies().to_vec())
-                })
-                .filter(|(v, _)| constraints.matches(v))
-                .map(|(ver, deps)| {
-                    let deps = deps
-                        .iter()
-                        .map(|d| Dependency {
-                            name: d.crate_name().into(),
-                            constraints: d
-                                .requirement()
-                                .parse()
-                                .expect("invalid version requirenment"),
-                        })
-                        .collect();
-
-                    PackageVersion {
-                        name: package_name.into(),
-                        version: ver,
-                        deps,
-                    }
-                })
-                .collect(),
-        ))
+            format!("https://index.crates.io/4/{first_two}/{second_two}/{name}",)
+        }
     }
 }
