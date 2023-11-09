@@ -17,7 +17,7 @@ impl SolveVersionsCommand {
         wrap(async move {
             //
 
-            solve(
+            let solution = solve(
                 Arc::new(Constraints {
                     candidate_packages: vec![
                         "swc_ecma_utils".into(),
@@ -32,6 +32,8 @@ impl SolveVersionsCommand {
                 Arc::new(CargoPackageManager),
             )
             .await?;
+
+            println!("{:#?}", solution);
 
             Ok(())
         })

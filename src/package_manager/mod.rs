@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use auto_impl::auto_impl;
 use hstr::Atom;
 use semver::{Version, VersionReq};
+use serde::Serialize;
 
 pub mod cargo;
 
@@ -26,7 +27,7 @@ pub struct PackageVersion {
     pub deps: Vec<Dependency>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct Dependency {
     pub name: PackageName,
     pub constraints: VersionReq,

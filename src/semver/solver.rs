@@ -4,6 +4,7 @@ use ahash::{AHashMap, AHashSet};
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use futures::{stream::FuturesUnordered, StreamExt};
+use serde::Serialize;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
@@ -19,8 +20,10 @@ pub struct Constraints {
     pub compatible_packages: Vec<Dependency>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Solution {}
+#[derive(Debug, Clone, Serialize)]
+pub struct Solution {
+    pub packages: Vec<Dependency>,
+}
 
 pub async fn solve(
     constraints: Arc<Constraints>,
@@ -196,15 +199,21 @@ impl Solver {
 
         constraints.finalize().await;
 
-        for pkg in interesing_pkgs.iter() {
-            let req = constraints.get(pkg).unwrap();
-            println!("{}: {}", pkg, req);
-        }
-
         // dbg!(&interesing_pkgs);
         // dbg!(&constraints);
 
-        Ok(Solution {})
+        Ok(Solution {
+            packages: interesing_pkgs
+                .iter()
+                .map(|name| {
+                    let req = constraints.get(name).unwrap();
+                    Dependency {
+                        name: name.clone(),
+                        constraints: req.clone(),
+                    }
+                })
+                .collect(),
+        })
     }
 
     fn get_direct_deps_of_current_cargo_workspace(&self) -> Result<Vec<PackageName>> {
