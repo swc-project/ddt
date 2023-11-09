@@ -18,7 +18,6 @@ auto_impl = "1.1.0"
 cargo_metadata = "0.15.2"
 chrono = "0.4.31"
 clap = { version = "4.0.29", features = ["derive"] }
-crates-index = { version = "2.1.1", features = ["git"] }
 dialoguer = { version = "0.11.0", features = ["completion"] }
 dudy-malloc = "0.1.0"
 futures = "0.3.25"
