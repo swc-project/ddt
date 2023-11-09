@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use semver::{Version, VersionReq};
 use serde::Deserialize;
@@ -71,7 +71,7 @@ fn build_url(name: &str) -> String {
             let first_two = &name[0..2];
             let second_two = &name[2..4];
 
-            format!("https://index.crates.io/4/{first_two}/{second_two}/{name}",)
+            format!("https://index.crates.io/{first_two}/{second_two}/{name}",)
         }
     }
 }
