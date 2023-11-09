@@ -204,7 +204,7 @@ impl Solver {
         info!("Solving versions using Solver");
 
         let start = Instant::now();
-        let constraints = {
+        let mut constraints = {
             let mut constraints = ConstraintStorage::root();
 
             for constraint in self.constraints.compatible_packages.iter() {
@@ -230,7 +230,10 @@ impl Solver {
             self.get_direct_deps_of_current_cargo_workspace()?
         };
 
+        constraints.finalize().await;
+
         dbg!(&interesing_pkgs);
+        dbg!(&constraints);
 
         Ok(Solution {})
     }

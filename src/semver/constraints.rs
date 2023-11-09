@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
+use async_recursion::async_recursion;
 use semver::VersionReq;
 use tokio::sync::RwLock;
 
@@ -46,6 +47,19 @@ impl ConstraintStorage {
 
     pub(crate) fn unfreeze(dep_constraints: Arc<Self>) -> Self {
         Arc::try_unwrap(dep_constraints).expect("failed to unfreeze constraint storage")
+    }
+
+    #[async_recursion]
+    pub(super) async fn finalize(&mut self) {
+        for c in self.children.write().await.drain(..) {
+            let mut c = Self::unfreeze(c);
+
+            c.finalize().await;
+
+            for (name, constraints) in c.cur.drain() {
+                self.cur.insert(name, constraints);
+            }
+        }
     }
 }
 
