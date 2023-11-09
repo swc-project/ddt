@@ -45,8 +45,9 @@ impl PackageManager for CargoPackageManager {
                     deps: line
                         .deps
                         .into_iter()
+                        .filter(|dep| dep.kind == "normal")
                         .map(|d| Dependency {
-                            name: d.name,
+                            name: d.package.unwrap_or(d.name),
                             constraints: d.req,
                         })
                         .collect(),
@@ -88,4 +89,7 @@ struct Descriptor {
 struct DepDescriptor {
     pub name: PackageName,
     pub req: VersionReq,
+    pub kind: String,
+    #[serde(default)]
+    pub package: Option<PackageName>,
 }
