@@ -232,8 +232,13 @@ impl Solver {
 
         constraints.finalize().await;
 
-        dbg!(&interesing_pkgs);
-        dbg!(&constraints);
+        for pkg in interesing_pkgs.iter() {
+            let req = constraints.get(pkg).unwrap();
+            println!("{}: {}", pkg, req);
+        }
+
+        // dbg!(&interesing_pkgs);
+        // dbg!(&constraints);
 
         Ok(Solution {})
     }
