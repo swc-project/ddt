@@ -5,7 +5,7 @@ use async_recursion::async_recursion;
 use semver::VersionReq;
 use tokio::sync::RwLock;
 
-use super::PackageName;
+use crate::package_manager::PackageName;
 
 pub(crate) type ConstraintsPerPkg = AHashMap<PackageName, VersionReq>;
 
