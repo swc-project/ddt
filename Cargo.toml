@@ -15,7 +15,6 @@ anyhow = "1.0.0"
 async-recursion = "1.0.5"
 async-trait = "0.1.73"
 auto_impl = "1.1.0"
-cargo = "0.74.0"
 cargo_metadata = "0.15.2"
 chrono = "0.4.31"
 clap = { version = "4.0.29", features = ["derive"] }
@@ -23,7 +22,7 @@ crates-index = { version = "2.1.1", features = ["git"] }
 dialoguer = { version = "0.11.0", features = ["completion"] }
 dudy-malloc = "0.1.0"
 futures = "0.3.25"
-hstr = "0.2.4"
+hstr = "0.2.5"
 inferno = "0.11.17"
 is_executable = "1.0.1"
 once_cell = "1.18.0"
@@ -61,6 +60,3 @@ opt-level = 3
 
 [profile.dev.package."*"]
 opt-level = 3
-
-[patch.crates-io]
-pubgrub = { git = "https://github.com/pubgrub-rs/pubgrub.git", branch = "dev" }
