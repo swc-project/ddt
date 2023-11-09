@@ -4,6 +4,8 @@ use ahash::{AHashMap, AHashSet};
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
 use futures::{stream::FuturesUnordered, StreamExt};
+use semver::VersionReq;
+use serde::Serialize;
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
@@ -19,8 +21,10 @@ pub struct Constraints {
     pub compatible_packages: Vec<Dependency>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Solution {}
+#[derive(Debug, Clone, Serialize)]
+pub struct Solution {
+    pub packages: Vec<Dependency>,
+}
 
 pub async fn solve(
     constraints: Arc<Constraints>,
@@ -188,45 +192,29 @@ impl Solver {
 
         // dbg!(&constraints);
 
-        let interesing_pkgs = if !self.constraints.candidate_packages.is_empty() {
-            self.constraints.candidate_packages.clone()
-        } else {
-            self.get_direct_deps_of_current_cargo_workspace()?
-        };
+        let mut interesing_pkgs = self.constraints.candidate_packages.clone();
+        interesing_pkgs.sort_by(|a, b| a.cmp(b));
+        interesing_pkgs.dedup();
 
         constraints.finalize().await;
-
-        for pkg in interesing_pkgs.iter() {
-            let req = constraints.get(pkg).unwrap();
-            println!("{}: {}", pkg, req);
-        }
 
         // dbg!(&interesing_pkgs);
         // dbg!(&constraints);
 
-        Ok(Solution {})
-    }
-
-    fn get_direct_deps_of_current_cargo_workspace(&self) -> Result<Vec<PackageName>> {
-        let ws = cargo_metadata::MetadataCommand::new()
-            .exec()
-            .context("failed to run `cargo metadata`")?;
-
-        let ws_pkg_names = ws
-            .workspace_members
-            .iter()
-            .map(|p| p.to_string())
-            .map(PackageName::from)
-            .collect::<AHashSet<_>>();
-
-        let ws_pkgs = ws
-            .packages
-            .iter()
-            .filter(|pkg| ws_pkg_names.contains(&pkg.name.clone().into()));
-
-        Ok(ws_pkgs
-            .flat_map(|pkg| pkg.dependencies.iter().map(|d| d.name.clone()))
-            .map(PackageName::from)
-            .collect())
+        Ok(Solution {
+            packages: interesing_pkgs
+                .iter()
+                .map(|name| {
+                    let req = constraints
+                        .get(name)
+                        .cloned()
+                        .unwrap_or_else(|| VersionReq::STAR);
+                    Dependency {
+                        name: name.clone(),
+                        constraints: req.clone(),
+                    }
+                })
+                .collect(),
+        })
     }
 }
