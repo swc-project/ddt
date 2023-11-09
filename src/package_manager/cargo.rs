@@ -23,7 +23,7 @@ impl PackageManager for CargoPackageManager {
 
         let body = reqwest::get(&build_url(package_name)).await?.text().await?;
 
-        let v = body
+        let mut v = body
             .lines()
             .into_iter()
             .filter_map(|line| {
@@ -55,6 +55,8 @@ impl PackageManager for CargoPackageManager {
             })
             .collect::<Result<Vec<_>>>()
             .with_context(|| format!("failed to parse index of {}", package_name))?;
+
+        v.sort_by(|a, b| (b.version).cmp(&a.version));
 
         Ok(Arc::new(v))
     }
