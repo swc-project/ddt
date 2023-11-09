@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use auto_impl::auto_impl;
 use hstr::Atom;
@@ -31,4 +31,30 @@ pub struct PackageVersion {
 pub struct Dependency {
     pub name: PackageName,
     pub constraints: VersionReq,
+}
+
+impl FromStr for Dependency {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let parts = s.splitn(2, '@');
+
+        let mut parts = parts.map(|s| s.trim());
+
+        let name = parts.next().unwrap().into();
+        let constraints = parts
+            .next()
+            .map(|s| {
+                s.parse::<VersionReq>().with_context(|| {
+                    format!("failed to parse version constraints (`{s}`) of {}", name)
+                })
+            })
+            .transpose()?;
+
+        Ok(Self {
+            constraints: constraints
+                .unwrap_or_else(|| panic!("failed to parse constraints of {}", name)),
+            name,
+        })
+    }
 }

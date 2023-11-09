@@ -4,13 +4,19 @@ use anyhow::{Context, Result};
 use clap::Args;
 
 use crate::{
-    package_manager::{cargo::CargoPackageManager, Dependency},
+    package_manager::{cargo::CargoPackageManager, Dependency, PackageName},
     semver::solver::{solve, Constraints},
     util::wrap,
 };
 
 #[derive(Debug, Args)]
-pub struct SolveVersionsCommand {}
+pub struct SolveVersionsCommand {
+    #[clap(short = 'p', long = "package")]
+    pub intersecting_packages: Vec<PackageName>,
+
+    #[clap(short = 'r', long = "require")]
+    pub constraints: Vec<Dependency>,
+}
 
 impl SolveVersionsCommand {
     pub async fn run(self) -> Result<()> {
