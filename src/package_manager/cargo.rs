@@ -64,12 +64,12 @@ fn build_url(name: &str) -> String {
         1 => format!("https://index.crates.io/1/{name}"),
         2 => format!("https://index.crates.io/2/{name}"),
         3 => {
-            let first_char = name.chars().next().unwrap();
+            let first_char = name.chars().next().unwrap().to_ascii_lowercase();
             format!("https://index.crates.io/3/{first_char}/{name}")
         }
         _ => {
-            let first_two = &name[0..2];
-            let second_two = &name[2..4];
+            let first_two = name[0..2].to_ascii_lowercase();
+            let second_two = name[2..4].to_ascii_lowercase();
 
             format!("https://index.crates.io/{first_two}/{second_two}/{name}",)
         }
