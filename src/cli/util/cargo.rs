@@ -39,14 +39,16 @@ pub async fn get_one_binary_using_cargo(
         let tmp_dir = tempdir()?;
         let plist = tmp_dir.path().join("entitlements.xml");
 
-        let entitlements = r#"<?xml version="1.0" encoding="UTF-8"?>                                                                                                                           ─╯
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"\>
+        let entitlements = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
     <dict>
         <key>com.apple.security.get-task-allow</key>
         <true/>
     </dict>
-</plist>"#;
+</plist>
+        
+        "#;
 
         std::fs::write(&plist, entitlements).context("failed to write the entitlements file")?;
 
@@ -54,7 +56,7 @@ pub async fn get_one_binary_using_cargo(
 
         cmd.arg(&bin.path);
 
-        eprintln!("{cmd:?}");
+        eprintln!("Running codesign on the built binary...");
         let status = cmd.status().context("failed to codesign the binary")?;
 
         if !status.success() {
