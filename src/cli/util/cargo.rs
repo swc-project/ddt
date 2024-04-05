@@ -2,6 +2,7 @@ use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 use dialoguer::Select;
+use tempfile::{tempdir, tempfile};
 
 use crate::util::cargo_build::{cargo_workspace_dir, compile, BinFile, CargoBuildTarget};
 
@@ -38,18 +39,25 @@ pub async fn get_one_binary_using_cargo(
         let mut cmd = Command::new("codesign");
         cmd.arg("-s").arg("-").arg("-v").arg("-f");
 
-        let entitlements = r#"<?xml version="1.0" encoding="UTF-8"?>                                                                                                                           ─╯
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"\>
-        <plist version="1.0">
-            <dict>
-                <key>com.apple.security.get-task-allow</key>
-                <true/>
-            </dict>
-        </plist>"#;
+        let tmp_dir = tempdir()?;
+        let plist = tmp_dir.path().join("entitlements.plist");
 
-        cmd.arg("--entitlements").arg(format!("={}", entitlements));
+        let entitlements = r#"<?xml version="1.0" encoding="UTF-8"?>                                                                                                                           ─╯
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"\>
+<plist version="1.0">
+    <dict>
+        <key>com.apple.security.get-task-allow</key>
+        <true/>
+    </dict>
+</plist>"#;
+
+        std::fs::write(&plist, entitlements).context("failed to write the entitlements file")?;
+
+        cmd.arg("--entitlements").arg(&plist);
 
         cmd.arg(&bin.path);
+
+        eprintln!("{cmd:?}");
         let status = cmd.status().context("failed to codesign the binary")?;
 
         if !status.success() {
