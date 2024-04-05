@@ -8,9 +8,25 @@ Dudy dev tools.
 cargo install ddt
 ```
 
-## `ddt git`
+# `ddt profile`
 
-### `ddt git resolve-conflict`
+Commands to profile your code.
+
+## `ddt profile instruments`
+
+Commands to profile your code using Instruments.app. (macos only)
+
+## `ddt profile instruments cargo`
+
+Example usage:
+
+`ddt profile instruments cargo -t 'Allocations' --release --test snapshot`
+
+This will build a binary using `cargo`, codesign the binary, and run the binary with the `Allocations` instrument in Instruments.app.
+
+# `ddt git`
+
+## `ddt git resolve-conflict`
 
 This command allows you to resolve conflicts in lockfiles automatically.
 
