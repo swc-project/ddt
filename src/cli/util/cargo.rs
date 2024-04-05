@@ -2,7 +2,7 @@ use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 use dialoguer::Select;
-use tempfile::{tempdir, tempfile};
+use tempfile::tempdir;
 
 use crate::util::cargo_build::{cargo_workspace_dir, compile, BinFile, CargoBuildTarget};
 
@@ -40,7 +40,7 @@ pub async fn get_one_binary_using_cargo(
         cmd.arg("-s").arg("-").arg("-v").arg("-f");
 
         let tmp_dir = tempdir()?;
-        let plist = tmp_dir.path().join("entitlements.plist");
+        let plist = tmp_dir.path().join("entitlements.xml");
 
         let entitlements = r#"<?xml version="1.0" encoding="UTF-8"?>                                                                                                                           ─╯
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"\>
