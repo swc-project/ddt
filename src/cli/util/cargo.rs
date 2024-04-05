@@ -33,9 +33,6 @@ pub async fn get_one_binary_using_cargo(
     };
 
     {
-        // codesign -s - -v -f --entitlements =(echo -n '')
-        // /Users/kdy1/projects/np-turbo/target/release/deps/snapshot-e0a24e74ad68b3cd
-
         let mut cmd = Command::new("codesign");
         cmd.arg("-s").arg("-").arg("-v").arg("-f");
 
