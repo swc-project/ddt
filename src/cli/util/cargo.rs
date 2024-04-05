@@ -38,21 +38,23 @@ pub async fn get_one_binary_using_cargo(
         let mut cmd = Command::new("codesign");
         cmd.arg("-s").arg("-").arg("-v").arg("-f");
 
-        let entitlements = r#"<?xml version="1.0"
-        // encoding="UTF-8"?>
-        // ─╯ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"\>
-        // <plist version="1.0">
-        //     <dict>
-        //         <key>com.apple.security.get-task-allow</key>
-        //         <true/>
-        //     </dict>
-        // </plist>"#;
+        let entitlements = r#"<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"\>
+        <plist version="1.0">
+            <dict>
+                <key>com.apple.security.get-task-allow</key>
+                <true/>
+            </dict>
+        </plist>"#;
 
-        cmd.arg("--entitlements")
-            .arg(format!("=(echo -n '{}')", entitlements));
+        cmd.arg("--entitlements").arg(format!("={}", entitlements));
 
         cmd.arg(&bin.path);
-        cmd.status().context("failed to codesign the binary")?;
+        let status = cmd.status().context("failed to codesign the binary")?;
+
+        if !status.success() {
+            bail!("failed to codesign the binary")
+        }
     }
 
     let mut envs = vec![];
