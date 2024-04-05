@@ -14,6 +14,10 @@ Commands to profile your code.
 
 ## `ddt profile instruments`
 
+Commands to profile your code using Instruments.app. (macos only)
+
+## `ddt profile instruments cargo`
+
 Example usage:
 
 `ddt profile instruments cargo -t 'Allocations' --release --test snapshot`
