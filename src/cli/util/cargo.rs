@@ -64,6 +64,19 @@ pub async fn get_one_binary_using_cargo(
         }
     }
 
+    {
+        eprintln!("Running dsymutil on the built binary...");
+
+        let status = Command::new("dsymutil")
+            .arg(&bin.path)
+            .status()
+            .context("failed to run dsymutil on the binary")?;
+
+        if !status.success() {
+            bail!("failed to run dsymutil on the binary")
+        }
+    }
+
     let mut envs = vec![];
 
     let mut add = |key: &str, value: String| {
