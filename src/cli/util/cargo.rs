@@ -64,7 +64,7 @@ pub async fn get_one_binary_using_cargo(
         }
     }
 
-    {
+    if cfg!(target_os = "macos") {
         eprintln!("Running dsymutil on the built binary...");
 
         let status = Command::new("dsymutil")
