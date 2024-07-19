@@ -1,10 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 
-use self::{
-    cargo::CargoCommand, list_templates::ListTemplatesCommand, run::RunCommand,
-    util::XcodeInstruments,
-};
+use self::{cargo::CargoCommand, run::RunCommand};
 use crate::util::wrap;
 
 mod cargo;
@@ -21,8 +18,8 @@ impl SamplyCommand {
     pub async fn run(self) -> Result<()> {
         wrap(async move {
             match self.cmd {
-                Inner::Run(cmd) => cmd.run(xctrace_tool, Default::default()).await,
-                Inner::Cargo(cmd) => cmd.run(xctrace_tool).await,
+                Inner::Run(cmd) => cmd.run(Default::default()).await,
+                Inner::Cargo(cmd) => cmd.run().await,
             }
         })
         .await

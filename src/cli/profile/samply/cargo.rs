@@ -1,21 +1,15 @@
 use anyhow::{Context, Result};
 use clap::Args;
 
-use super::{run::RunCommand, util::file_name_for_trace_file};
+use super::run::RunCommand;
 use crate::{
-    cli::{profile::instruments::util::XcodeInstruments, util::cargo::get_one_binary_using_cargo},
-    util::{
-        cargo_build::{cargo_target_dir, CargoBuildTarget},
-        wrap,
-    },
+    cli::util::cargo::get_one_binary_using_cargo,
+    util::{cargo_build::CargoBuildTarget, wrap},
 };
 
 /// Invoke a binary file built using `cargo` under the `instruments` tool.
 #[derive(Debug, Clone, Args)]
 pub(super) struct CargoCommand {
-    #[clap(long, short = 't')]
-    template: String,
-
     #[clap(long)]
     time_limit: Option<usize>,
 
@@ -33,22 +27,16 @@ pub(super) struct CargoCommand {
 }
 
 impl CargoCommand {
-    pub async fn run(self, xctrace_tool: XcodeInstruments) -> Result<()> {
+    pub async fn run(self) -> Result<()> {
         let (cmd, envs) = wrap(async move {
             let (bin, envs) = get_one_binary_using_cargo(&self.build_target).await?;
 
-            let output_path = cargo_target_dir()?
-                .join("instruments")
-                .join(file_name_for_trace_file(&bin.path, &self.template)?);
-
             Ok((
                 RunCommand {
-                    template: self.template,
                     time_limit: self.time_limit,
                     no_open: self.no_open,
                     args: self.args,
                     bin: bin.path,
-                    output_path: Some(output_path),
                 },
                 envs,
             ))
@@ -56,7 +44,7 @@ impl CargoCommand {
         .await
         .context("failed to build the target binary using cargo")?;
 
-        cmd.run(xctrace_tool, envs)
+        cmd.run(envs)
             .await
             .context("failed to run `ddt profile instruments run` with the built binary")
     }
