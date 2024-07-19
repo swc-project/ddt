@@ -37,6 +37,14 @@ impl RunCommand {
                 cmd.arg(arg);
             }
 
+            if !cmd.status()?.success() {
+                anyhow::bail!(
+                    "failed to run samply with `{}` `{:?}`",
+                    c.bin.display(),
+                    c.args
+                );
+            }
+
             Ok(())
         })
         .await
