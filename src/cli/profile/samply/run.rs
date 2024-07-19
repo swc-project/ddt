@@ -25,7 +25,7 @@ impl RunCommand {
         let c = self.clone();
 
         wrap(async move {
-            let mut cmd = Command::new("smaply");
+            let mut cmd = Command::new("samply");
             cmd.arg("record").arg(&self.bin);
 
             for (k, v) in envs {
