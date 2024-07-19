@@ -3,12 +3,15 @@ use std::os::unix::process::ExitStatusExt;
 use std::process::{Command, ExitStatus};
 
 use anyhow::{bail, Context, Error};
+use tracing::info;
 
 /// Invokes profiler with proper signal hooks.
 ///
 /// This function is expected to run only `dtrace` or `perf`.
 pub fn run_profiler(mut cmd: Command) -> Result<(), Error> {
     let cmd_str = format!("{:?}", cmd);
+
+    info!("Running profiler: {}", cmd_str);
 
     // Handle SIGINT with an empty handler. This has the
     // implicit effect of allowing the signal to reach the

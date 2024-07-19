@@ -3,6 +3,7 @@ use std::process::Command;
 use anyhow::{bail, Context, Result};
 use dialoguer::Select;
 use tempfile::tempdir;
+use tracing::info;
 
 use crate::util::cargo_build::{cargo_workspace_dir, compile, BinFile, CargoBuildTarget};
 
@@ -56,7 +57,7 @@ pub async fn get_one_binary_using_cargo(
 
         cmd.arg(&bin.path);
 
-        eprintln!("Running codesign on the built binary...");
+        info!("Running codesign on the built binary...");
         let status = cmd.status().context("failed to codesign the binary")?;
 
         if !status.success() {
@@ -65,7 +66,7 @@ pub async fn get_one_binary_using_cargo(
     }
 
     if cfg!(target_os = "macos") {
-        eprintln!("Running dsymutil on the built binary...");
+        info!("Running dsymutil on the built binary...");
 
         let status = Command::new("dsymutil")
             .arg(&bin.path)
