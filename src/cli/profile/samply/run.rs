@@ -32,7 +32,6 @@ impl RunCommand {
                 cmd.env(k, v);
             }
 
-            cmd.arg("--");
             for arg in self.args.iter() {
                 cmd.arg(arg);
             }
