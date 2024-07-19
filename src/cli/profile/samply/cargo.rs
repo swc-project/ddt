@@ -46,6 +46,6 @@ impl CargoCommand {
 
         cmd.run(envs)
             .await
-            .context("failed to run `ddt profile instruments run` with the built binary")
+            .context("failed to run `ddt profile samply run` with the built binary")
     }
 }

@@ -38,11 +38,7 @@ impl RunCommand {
             }
 
             if !cmd.status()?.success() {
-                anyhow::bail!(
-                    "failed to run samply with `{}` `{:?}`",
-                    c.bin.display(),
-                    c.args
-                );
+                anyhow::bail!("failed to run samply with `{:?}`", cmd);
             }
 
             Ok(())
