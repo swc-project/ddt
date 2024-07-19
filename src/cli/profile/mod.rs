@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
+use samply::SamplyCommand;
 
 use self::{
     cpu_per_fn::CpuPerFnCommand, flamegraph::FlamegraphCommand, instruments::InstrumentsCommand,
@@ -8,6 +9,7 @@ use self::{
 mod cpu_per_fn;
 mod flamegraph;
 mod instruments;
+mod samply;
 mod util;
 
 /// Profiles performance
@@ -23,6 +25,7 @@ impl ProfileCommand {
             Inner::Flamegraph(cmd) => cmd.run().await,
             Inner::Instruments(cmd) => cmd.run().await,
             Inner::CpuPerFn(cmd) => cmd.run().await,
+            Inner::Samply(cmd) => cmd.run().await,
         }
     }
 }
@@ -31,5 +34,6 @@ impl ProfileCommand {
 enum Inner {
     Flamegraph(FlamegraphCommand),
     Instruments(InstrumentsCommand),
+    Samply(SamplyCommand),
     CpuPerFn(CpuPerFnCommand),
 }
