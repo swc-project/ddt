@@ -1,5 +1,7 @@
 extern crate dudy_malloc;
 
+use std::io;
+
 use anyhow::Result;
 use clap::Parser;
 use tracing::info;
@@ -17,6 +19,7 @@ mod util;
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_target(false)
+        .with_writer(io::stderr)
         .with_timer(tracing_subscriber::fmt::time::uptime())
         .with_level(true)
         .pretty()
