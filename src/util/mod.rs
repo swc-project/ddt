@@ -5,7 +5,6 @@ use tokio::process::Command;
 use tracing::info;
 
 pub mod cargo_build;
-pub mod intersection_union;
 
 /// Type annotation for [anyhow::Result]
 pub async fn wrap<Fut, Ret>(op: Fut) -> Result<Ret>
