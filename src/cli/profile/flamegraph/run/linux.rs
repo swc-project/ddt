@@ -30,7 +30,7 @@ pub(super) fn perf(
         .arg("dwarf")
         .arg("-g");
 
-    c.arg(&file);
+    c.arg(file);
 
     c.args(args);
 

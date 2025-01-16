@@ -152,6 +152,7 @@ impl GitWorkflow {
             .context("failed to get partially staged files")
     }
 
+    #[allow(clippy::invalid_regex)]
     async fn get_partially_staged_files_inner(self: Arc<Self>) -> Result<Vec<String>> {
         static SPLIT_RE: Lazy<Regex> =
             Lazy::new(|| Regex::new("\x00(?=[ AMDRCU?!]{2} |$)").unwrap());
@@ -307,7 +308,7 @@ impl GitWorkflow {
         };
 
         match result {
-            Ok(_) => return Ok(()),
+            Ok(_) => Ok(()),
             Err(err) => {
                 warn!("Error while restoring changes:'{:?}'", err);
                 info!("Retrying with 3-way merge");
@@ -414,7 +415,7 @@ impl GitWorkflow {
     async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<String> {
         let output = PrettyCmd::new("Running git command", "git")
             .dir(&*self.git_dir)
-            .args(&["-c", "submodule.recurse=false"])
+            .args(["-c", "submodule.recurse=false"])
             .args(args)
             .output()
             .await
@@ -455,7 +456,7 @@ impl GitWorkflow {
 ///
 /// Ported from https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/gitWorkflow.js#L29-L44
 fn process_renames(files: &[String], include_rename_from: bool) -> Vec<String> {
-    files.into_iter().fold(vec![], |mut flattened, file| {
+    files.iter().fold(vec![], |mut flattened, file| {
         if let Some(idx) = file.find('\0') {
             let (to, from) = file.split_at(idx);
 

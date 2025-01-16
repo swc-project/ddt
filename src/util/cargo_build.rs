@@ -130,11 +130,9 @@ pub fn compile(config: &CargoBuildTarget) -> Result<Vec<BinFile>> {
                     let mut executable = None;
 
                     artifact.filenames.retain(|path| {
-                        if executable.is_none() {
-                            if PathBuf::from(path).is_executable() {
-                                executable = Some(path.clone());
-                                return false;
-                            }
+                        if executable.is_none() && PathBuf::from(path).is_executable() {
+                            executable = Some(path.clone());
+                            return false;
                         }
 
                         true

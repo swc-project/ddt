@@ -10,7 +10,7 @@ use crate::util::cargo_build::{cargo_workspace_dir, compile, BinFile, CargoBuild
 pub async fn get_one_binary_using_cargo(
     build_target: &CargoBuildTarget,
 ) -> Result<(BinFile, Vec<(String, String)>)> {
-    let bins = compile(&build_target).context("failed to build the binary using cargo")?;
+    let bins = compile(build_target).context("failed to build the binary using cargo")?;
 
     if bins.is_empty() {
         bail!("cargo build did not produce any binaries")
@@ -21,7 +21,7 @@ pub async fn get_one_binary_using_cargo(
     } else {
         let items = bins
             .iter()
-            .map(|bin| format!("[{}] {}", bin.crate_name, bin.path.display().to_string()))
+            .map(|bin| format!("[{}] {}", bin.crate_name, bin.path.display()))
             .collect::<Vec<_>>();
 
         let selection = Select::new()

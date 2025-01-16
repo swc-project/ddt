@@ -93,7 +93,7 @@ impl RunCommand {
                 .write(true)
                 .truncate(true)
                 .create(true)
-                .open(&flamegraph_file_path)
+                .open(flamegraph_file_path)
                 .context("unable to create flamegraph.svg output file")?;
 
             let flamegraph_writer = BufWriter::new(flamegraph_file);
@@ -115,7 +115,7 @@ impl RunCommand {
             info!("Flamegraph printed to {}", flamegraph_file_path.display());
 
             if !self.no_open {
-                let _ = open_file(&flamegraph_file_path);
+                let _ = open_file(flamegraph_file_path);
             }
 
             Ok(())
