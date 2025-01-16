@@ -152,6 +152,7 @@ impl GitWorkflow {
             .context("failed to get partially staged files")
     }
 
+    #[allow(clippy::invalid_regex)]
     async fn get_partially_staged_files_inner(self: Arc<Self>) -> Result<Vec<String>> {
         static SPLIT_RE: Lazy<Regex> =
             Lazy::new(|| Regex::new("\x00(?=[ AMDRCU?!]{2} |$)").unwrap());
