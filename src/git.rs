@@ -307,7 +307,7 @@ impl GitWorkflow {
         };
 
         match result {
-            Ok(_) => return Ok(()),
+            Ok(_) => Ok(()),
             Err(err) => {
                 warn!("Error while restoring changes:'{:?}'", err);
                 info!("Retrying with 3-way merge");
@@ -414,7 +414,7 @@ impl GitWorkflow {
     async fn exec_git_inner(self: Arc<Self>, args: Vec<String>) -> Result<String> {
         let output = PrettyCmd::new("Running git command", "git")
             .dir(&*self.git_dir)
-            .args(&["-c", "submodule.recurse=false"])
+            .args(["-c", "submodule.recurse=false"])
             .args(args)
             .output()
             .await
