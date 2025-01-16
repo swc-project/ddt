@@ -105,9 +105,9 @@ impl XcodeInstruments {
         match self {
             XcodeInstruments::XcTrace => {
                 let mut command = Command::new("xcrun");
-                command.args(&["xctrace", "record"]);
+                command.args(["xctrace", "record"]);
 
-                command.args(&["--template", template_name]);
+                command.args(["--template", template_name]);
 
                 if let Some(limit_millis) = time_limit {
                     let limit_millis_str = format!("{}ms", limit_millis);
@@ -117,7 +117,7 @@ impl XcodeInstruments {
                 command.args(["--output", trace_file_path.to_str().unwrap()]);
                 // redirect stdin & err to the user's terminal
                 if let Some(tty) = get_tty()? {
-                    command.args(&["--target-stdin", &tty, "--target-stdout", &tty]);
+                    command.args(["--target-stdin", &tty, "--target-stdout", &tty]);
                 }
 
                 command.args(["--launch", "--"]);
@@ -125,12 +125,12 @@ impl XcodeInstruments {
             }
             XcodeInstruments::InstrumentsBinary => {
                 let mut command = Command::new("instruments");
-                command.args(&["-t", template_name]);
+                command.args(["-t", template_name]);
 
-                command.arg("-D").arg(&trace_file_path);
+                command.arg("-D").arg(trace_file_path);
 
                 if let Some(limit) = time_limit {
-                    command.args(&["-l", &limit.to_string()]);
+                    command.args(["-l", &limit.to_string()]);
                 }
                 Ok(command)
             }
@@ -144,9 +144,8 @@ impl XcodeInstruments {
 /// '11.2.3`) and returns the corresponding semver struct `Version{major: 11,
 /// minor: 2, patch: 3}`.
 fn get_macos_version() -> Result<Version> {
-    let Output { status, stdout, .. } = Command::new("sw_vers")
-        .args(&["-productVersion"])
-        .output()?;
+    let Output { status, stdout, .. } =
+        Command::new("sw_vers").args(["-productVersion"]).output()?;
 
     if !status.success() {
         return Err(anyhow!("macOS version cannot be determined"));
@@ -214,7 +213,7 @@ fn parse_xctrace_template_list() -> Result<TemplateCatalog> {
         stdout,
         stderr,
     } = Command::new("xcrun")
-        .args(&["xctrace", "list", "templates"])
+        .args(["xctrace", "list", "templates"])
         .output()?;
 
     if !status.success() {
@@ -498,7 +497,7 @@ pub(super) fn profile_target(
     let mut command =
         xctrace_tool.profiling_command(template_name, &trace_file_path, cmd.time_limit)?;
 
-    command.arg(&target_filepath);
+    command.arg(target_filepath);
 
     if !cmd.args.is_empty() {
         command.args(&cmd.args);

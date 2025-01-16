@@ -12,6 +12,6 @@ impl ListTemplatesCommand {
     pub async fn run(self, xctrace_tool: XcodeInstruments) -> Result<()> {
         let catalog = xctrace_tool.available_templates()?;
         println!("{}", render_template_catalog(&catalog));
-        return Ok(());
+        Ok(())
     }
 }

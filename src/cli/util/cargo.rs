@@ -10,7 +10,7 @@ use crate::util::cargo_build::{cargo_workspace_dir, compile, BinFile, CargoBuild
 pub async fn get_one_binary_using_cargo(
     build_target: &CargoBuildTarget,
 ) -> Result<(BinFile, Vec<(String, String)>)> {
-    let bins = compile(&build_target).context("failed to build the binary using cargo")?;
+    let bins = compile(build_target).context("failed to build the binary using cargo")?;
 
     if bins.is_empty() {
         bail!("cargo build did not produce any binaries")
