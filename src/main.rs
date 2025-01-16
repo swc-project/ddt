@@ -11,7 +11,6 @@ use crate::cli::CliArgs;
 mod cli;
 mod git;
 mod package_manager;
-mod semver;
 mod util;
 
 #[tokio::main]

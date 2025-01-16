@@ -111,16 +111,16 @@ impl XcodeInstruments {
 
                 if let Some(limit_millis) = time_limit {
                     let limit_millis_str = format!("{}ms", limit_millis);
-                    command.args(&["--time-limit", &limit_millis_str]);
+                    command.args(["--time-limit", &limit_millis_str]);
                 }
 
-                command.args(&["--output", trace_file_path.to_str().unwrap()]);
+                command.args(["--output", trace_file_path.to_str().unwrap()]);
                 // redirect stdin & err to the user's terminal
                 if let Some(tty) = get_tty()? {
                     command.args(&["--target-stdin", &tty, "--target-stdout", &tty]);
                 }
 
-                command.args(&["--launch", "--"]);
+                command.args(["--launch", "--"]);
                 Ok(command)
             }
             XcodeInstruments::InstrumentsBinary => {
