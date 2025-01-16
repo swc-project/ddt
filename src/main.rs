@@ -1,3 +1,5 @@
+#![allow(clippy::large_enum_variant)]
+
 extern crate swc_malloc;
 
 use std::io;

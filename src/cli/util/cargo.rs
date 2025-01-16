@@ -21,7 +21,7 @@ pub async fn get_one_binary_using_cargo(
     } else {
         let items = bins
             .iter()
-            .map(|bin| format!("[{}] {}", bin.crate_name, bin.path.display().to_string()))
+            .map(|bin| format!("[{}] {}", bin.crate_name, bin.path.display()))
             .collect::<Vec<_>>();
 
         let selection = Select::new()

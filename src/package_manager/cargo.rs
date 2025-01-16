@@ -25,7 +25,6 @@ impl PackageManager for CargoPackageManager {
 
         let mut v = body
             .lines()
-            .into_iter()
             .filter_map(|line| {
                 let desc = serde_json::from_str::<Descriptor>(&line);
                 let line = match desc {

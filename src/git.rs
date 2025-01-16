@@ -455,7 +455,7 @@ impl GitWorkflow {
 ///
 /// Ported from https://github.com/okonet/lint-staged/blob/19a6527c8ac07dbafa2b8c1774e849d3cab635c3/lib/gitWorkflow.js#L29-L44
 fn process_renames(files: &[String], include_rename_from: bool) -> Vec<String> {
-    files.into_iter().fold(vec![], |mut flattened, file| {
+    files.iter().fold(vec![], |mut flattened, file| {
         if let Some(idx) = file.find('\0') {
             let (to, from) = file.split_at(idx);
 

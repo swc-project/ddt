@@ -285,7 +285,7 @@ fn parse_xctrace_template_list() -> Result<TemplateCatalog> {
 /// ```
 fn parse_instruments_template_list() -> Result<TemplateCatalog> {
     let Output { status, stdout, .. } = Command::new("instruments")
-        .args(&["-s", "templates"])
+        .args(["-s", "templates"])
         .output()?;
 
     if !status.success() {
