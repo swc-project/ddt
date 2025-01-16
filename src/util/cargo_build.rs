@@ -57,6 +57,9 @@ pub struct CargoBuildTarget {
 
     #[clap(long = "package", short = 'p')]
     packages: Vec<String>,
+
+    #[clap(long)]
+    profile: Option<String>,
 }
 
 /// Compile one or more targets.
@@ -100,6 +103,10 @@ pub fn compile(config: &CargoBuildTarget) -> Result<Vec<BinFile>> {
 
     if let Some(features) = &config.features {
         cmd.arg("--features").arg(features.join(","));
+    }
+
+    if let Some(profile) = &config.profile {
+        cmd.arg("--profile").arg(profile);
     }
 
     for pkg in &config.packages {
