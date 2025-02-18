@@ -2,15 +2,19 @@ use std::fmt::{self, Display};
 
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
+use hstr::Atom;
 use humansize::{format_size, DECIMAL};
 use indexmap::IndexMap;
 use rustc_hash::FxBuildHasher;
 use serde::Deserialize;
 use toml_edit::{table, value, DocumentMut};
 
-use crate::util::{
-    cargo_build::{cargo_root_manifest, CargoBuildTarget},
-    ensure_cargo_subcommand, PrettyCmd,
+use crate::{
+    cli::util::cargo::to_original_crate_name,
+    util::{
+        cargo_build::{cargo_root_manifest, CargoBuildTarget},
+        ensure_cargo_subcommand, PrettyCmd,
+    },
 };
 
 /// Comamnds to reduce the size of the binary.
@@ -84,7 +88,7 @@ impl SelectPerCrateCommand {
             .as_table_mut()
             .context("failed to get the package table")?;
 
-        let mut crates = IndexMap::<_, _, FxBuildHasher>::default();
+        let mut crates = IndexMap::<Atom, _, FxBuildHasher>::default();
 
         if self.compare {
             ensure_cargo_subcommand("bloat")
@@ -102,7 +106,6 @@ impl SelectPerCrateCommand {
                     let info = crates
                         .entry(crate_.name.clone())
                         .or_insert_with(|| CrateInfo {
-                            name: crate_.name.clone(),
                             size: PerOptLevel::default(),
                         });
 
@@ -122,6 +125,9 @@ impl SelectPerCrateCommand {
         });
 
         for (name, info) in crates {
+            let name =
+                to_original_crate_name(name).context("failed to get the original crate name")?;
+
             let selected = dialoguer::Select::new()
                 .with_prompt(format!("Select the optimization level for {}", name))
                 .items(
@@ -237,7 +243,7 @@ struct BloatOutput {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct BloatCrate {
-    name: String,
+    name: Atom,
     /// File size in bytes.
     size: u64,
 }
@@ -267,7 +273,5 @@ type PerOptLevel<T> = IndexMap<OptLevel, T, FxBuildHasher>;
 
 #[derive(Debug)]
 struct CrateInfo {
-    #[allow(unused)]
-    name: String,
     size: PerOptLevel<u64>,
 }

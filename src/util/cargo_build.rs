@@ -203,6 +203,15 @@ pub fn run_cargo_metadata_no_deps() -> Result<Arc<cargo_metadata::Metadata>> {
     Ok(Arc::new(md))
 }
 
+#[cached(result = true)]
+pub fn run_cargo_metadata_with_deps() -> Result<Arc<cargo_metadata::Metadata>> {
+    let md = cargo_metadata::MetadataCommand::new()
+        .exec()
+        .context("cargo metadata failed")?;
+
+    Ok(Arc::new(md))
+}
+
 pub fn cargo_target_dir() -> Result<PathBuf> {
     let md = run_cargo_metadata_no_deps()?;
 
