@@ -68,6 +68,13 @@ impl SelectPerCrateCommand {
             }
         }
 
+        // Remove from the crate list if the size is the same for all opt levels.
+        crates.retain(|_, info| {
+            let mut sizes = info.size.values().collect::<Vec<_>>();
+            sizes.sort_unstable();
+            !sizes.iter().all(|size| size == &sizes[0])
+        });
+
         for (name, info) in crates {
             eprintln!("{}", name);
             for (opt_level, size) in info.size {
