@@ -41,13 +41,13 @@ struct SelectPerCrateCommand {
 
 impl SelectPerCrateCommand {
     pub async fn run(self) -> Result<()> {
-        ensure_cargo_subcommand("bloat")
-            .await
-            .context("You can install bloat by `cargo install cargo-bloat`")?;
-
         let mut crates = IndexMap::<_, _, FxBuildHasher>::default();
 
         if self.compare {
+            ensure_cargo_subcommand("bloat")
+                .await
+                .context("You can install bloat by `cargo install cargo-bloat`")?;
+
             let for_perf = run_bloat(&self.build_target, OptLevel::Performance).await?;
             let for_size = run_bloat(&self.build_target, OptLevel::Size).await?;
 
