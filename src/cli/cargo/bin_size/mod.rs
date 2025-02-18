@@ -136,9 +136,14 @@ impl SelectPerCrateCommand {
 
                 let mut t = table();
                 {
-                    t.as_table_mut()
-                        .unwrap()
-                        .insert("opt-level", value(selected_opt_level.to_string()));
+                    t.as_table_mut().unwrap().insert(
+                        "opt-level",
+                        match selected_opt_level {
+                            OptLevel::Performance => value(3),
+                            OptLevel::Size => value("s"),
+                            OptLevel::SizeWithLoopVec => value("z"),
+                        },
+                    );
                 }
 
                 package_table[&*name] = t;
