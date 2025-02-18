@@ -56,6 +56,9 @@ async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<(
     // Show all crates
     cmd.arg("-n").arg("0");
 
+    // Ouptut in json format.
+    cmd.arg("--message-format").arg("json");
+
     cmd.env("CARGO_PROFILE_RELEASE_DEBUG", "1");
     cmd.env("CARGO_PROFILE_RELEASE_OPT_LEVEL", opt_level);
 
