@@ -4,9 +4,9 @@ use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 use humansize::{format_size, DECIMAL};
 use indexmap::IndexMap;
-use rustc_hash::{FxBuildHasher, FxHashMap};
+use rustc_hash::FxBuildHasher;
 use serde::Deserialize;
-use toml_edit::DocumentMut;
+use toml_edit::{value, DocumentMut};
 
 use crate::util::{
     cargo_build::{cargo_root_manifest, CargoBuildTarget},
@@ -45,13 +45,20 @@ struct SelectPerCrateCommand {
 
 impl SelectPerCrateCommand {
     pub async fn run(self) -> Result<()> {
-        let root_cargo_toml = cargo_root_manifest().context("failed to get the root cargo.toml")?;
-        let root_content = std::fs::read_to_string(root_cargo_toml)
+        let root_cargo_toml_path =
+            cargo_root_manifest().context("failed to get the root cargo.toml")?;
+        let root_content = std::fs::read_to_string(&root_cargo_toml_path)
             .context("failed to read the root cargo.toml")?;
 
         let mut toml = root_content
             .parse::<DocumentMut>()
             .context("failed to parse the root cargo.toml")?;
+
+        let profile = self.build_target.profile.as_deref().unwrap_or("release");
+
+        let package_table = toml["profile"][profile]["package"]
+            .as_table_mut()
+            .context("failed to get the package table")?;
 
         let mut crates = IndexMap::<_, _, FxBuildHasher>::default();
 
@@ -88,11 +95,26 @@ impl SelectPerCrateCommand {
         });
 
         for (name, info) in crates {
-            eprintln!("{}", name);
-            for (opt_level, size) in info.size {
-                eprintln!("  {} : {}", opt_level, format_size(size, DECIMAL));
+            let selected = dialoguer::Select::new()
+                .with_prompt(format!("Select the optimization level for {}", name))
+                .items(
+                    &info
+                        .size
+                        .iter()
+                        .map(|(k, v)| format!("{}: {}", k, format_size(*v, DECIMAL)))
+                        .collect::<Vec<_>>(),
+                )
+                .interact();
+
+            if let Ok(selected) = selected {
+                let (selected_opt_level, _) = info.size.get_index(selected).unwrap();
+
+                package_table[&*name] = value(selected_opt_level.to_string());
             }
         }
+
+        std::fs::write(root_cargo_toml_path, toml.to_string())
+            .context("failed to write the root cargo.toml")?;
 
         Ok(())
     }
@@ -167,9 +189,8 @@ async fn run_bloat(build_target: &CargoBuildTarget, opt_level: OptLevel) -> Resu
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct BloatOutput {
-    file_size: u64,
-    text_section_size: u64,
-
+    // file_size: u64,
+    // text_section_size: u64,
     crates: Vec<BloatCrate>,
 }
 
@@ -188,6 +209,7 @@ pub enum OptLevel {
     /// `s`
     Size,
     /// `z`
+    #[allow(unused)]
     SizeWithLoopVec,
 }
 
@@ -201,10 +223,11 @@ impl Display for OptLevel {
     }
 }
 
-type PerOptLevel<T> = FxHashMap<OptLevel, T>;
+type PerOptLevel<T> = IndexMap<OptLevel, T, FxBuildHasher>;
 
 #[derive(Debug)]
 struct CrateInfo {
+    #[allow(unused)]
     name: String,
     size: PerOptLevel<u64>,
 }

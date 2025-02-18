@@ -216,7 +216,5 @@ pub fn cargo_workspace_dir() -> Result<PathBuf> {
 }
 
 pub fn cargo_root_manifest() -> Result<PathBuf> {
-    let md = run_cargo_metadata_no_deps()?;
-
-    Ok(md.workspace_root.clone().into())
+    Ok(cargo_workspace_dir()?.join("Cargo.toml"))
 }
