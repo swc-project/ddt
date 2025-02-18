@@ -43,6 +43,7 @@ tokio = { version = "1.22.0", features = [
 ] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["fmt"] }
+which = { version = "7.0.2", features = ["tracing"] }
 
 [profile.release]
 lto = "off"
