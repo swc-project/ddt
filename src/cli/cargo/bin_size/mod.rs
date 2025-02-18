@@ -111,6 +111,9 @@ impl SelectPerCrateCommand {
             }
         }
 
+        // Remove from the crate list if it's already in the package table.
+        crates.retain(|name, _| !package_table.contains_key(name));
+
         // Remove from the crate list if the size is the same for all opt levels.
         crates.retain(|_, info| {
             let mut sizes = info.size.values().collect::<Vec<_>>();
