@@ -3,9 +3,11 @@ use std::{
     io::BufReader,
     path::PathBuf,
     process::{Command, Stdio},
+    sync::Arc,
 };
 
 use anyhow::{bail, Context, Result};
+use cached::proc_macro::cached;
 use cargo_metadata::{ArtifactProfile, Message};
 use clap::Parser;
 use is_executable::IsExecutable;
@@ -191,19 +193,30 @@ pub fn compile(config: &CargoBuildTarget) -> Result<Vec<BinFile>> {
     Ok(binaries)
 }
 
-pub fn cargo_target_dir() -> Result<PathBuf> {
+#[cached(result = true)]
+pub fn run_cargo_metadata_no_deps() -> Result<Arc<cargo_metadata::Metadata>> {
     let md = cargo_metadata::MetadataCommand::new()
         .no_deps()
         .exec()
         .context("cargo metadata failed")?;
 
-    Ok(md.target_directory.into())
+    Ok(Arc::new(md))
 }
-pub fn cargo_workspace_dir() -> Result<PathBuf> {
-    let md = cargo_metadata::MetadataCommand::new()
-        .no_deps()
-        .exec()
-        .context("cargo metadata failed")?;
 
-    Ok(md.workspace_root.into())
+pub fn cargo_target_dir() -> Result<PathBuf> {
+    let md = run_cargo_metadata_no_deps()?;
+
+    Ok(md.target_directory.clone().into())
+}
+
+pub fn cargo_workspace_dir() -> Result<PathBuf> {
+    let md = run_cargo_metadata_no_deps()?;
+
+    Ok(md.workspace_root.clone().into())
+}
+
+pub fn cargo_root_manifest() -> Result<PathBuf> {
+    let md = run_cargo_metadata_no_deps()?;
+
+    Ok(md.workspace_root.clone().into())
 }

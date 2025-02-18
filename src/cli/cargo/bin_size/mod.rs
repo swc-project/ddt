@@ -6,8 +6,12 @@ use humansize::{format_size, DECIMAL};
 use indexmap::IndexMap;
 use rustc_hash::{FxBuildHasher, FxHashMap};
 use serde::Deserialize;
+use toml_edit::DocumentMut;
 
-use crate::util::{cargo_build::CargoBuildTarget, ensure_cargo_subcommand, PrettyCmd};
+use crate::util::{
+    cargo_build::{cargo_root_manifest, CargoBuildTarget},
+    ensure_cargo_subcommand, PrettyCmd,
+};
 
 /// Comamnds to reduce the size of the binary.
 #[derive(Debug, Args)]
@@ -41,6 +45,14 @@ struct SelectPerCrateCommand {
 
 impl SelectPerCrateCommand {
     pub async fn run(self) -> Result<()> {
+        let root_cargo_toml = cargo_root_manifest().context("failed to get the root cargo.toml")?;
+        let root_content = std::fs::read_to_string(root_cargo_toml)
+            .context("failed to read the root cargo.toml")?;
+
+        let mut toml = root_content
+            .parse::<DocumentMut>()
+            .context("failed to parse the root cargo.toml")?;
+
         let mut crates = IndexMap::<_, _, FxBuildHasher>::default();
 
         if self.compare {
