@@ -59,6 +59,10 @@ async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<(
     cmd.env("CARGO_PROFILE_RELEASE_DEBUG", "1");
     cmd.env("CARGO_PROFILE_RELEASE_OPT_LEVEL", opt_level);
 
+    if build_target.release {
+        cmd.arg("--release");
+    }
+
     if build_target.lib {
         cmd.arg("--lib");
     }
