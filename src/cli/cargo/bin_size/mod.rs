@@ -128,9 +128,10 @@ impl SelectPerCrateCommand {
                         .map(|(k, v)| format!("{}: {}", k, format_size(*v, DECIMAL)))
                         .collect::<Vec<_>>(),
                 )
-                .interact();
+                .interact_opt()
+                .context("failed to select the optimization level")?;
 
-            if let Ok(selected) = selected {
+            if let Some(selected) = selected {
                 let (selected_opt_level, _) = info.size.get_index(selected).unwrap();
 
                 package_table[&*name] = value(selected_opt_level.to_string());
