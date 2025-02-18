@@ -51,6 +51,11 @@ impl SelectPerCrateCommand {
 async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<()> {
     let mut cmd = PrettyCmd::new("Running cargo bloat", "cargo");
     cmd.arg("bloat");
+
+    cmd.arg("--crates");
+    // Show all crates
+    cmd.arg("-n").arg("0");
+
     cmd.env("CARGO_PROFILE_RELEASE_DEBUG", "1");
     cmd.env("CARGO_PROFILE_RELEASE_OPT_LEVEL", opt_level);
 
