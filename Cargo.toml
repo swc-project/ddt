@@ -21,6 +21,7 @@ clap = { version = "4.0.29", features = ["derive"] }
 dialoguer = { version = "0.11.0", features = ["completion"] }
 futures = "0.3.25"
 hstr = { version = "0.2.5", features = ["serde"] }
+humansize = "2.1.3"
 indexmap = "2.7.1"
 inferno = "0.11.17"
 is_executable = "1.0.1"
