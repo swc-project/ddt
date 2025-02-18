@@ -130,7 +130,10 @@ impl SelectPerCrateCommand {
             };
 
             let selected = dialoguer::Select::new()
-                .with_prompt(format!("Select the optimization level for {}", name))
+                .with_prompt(format!(
+                    "Select the optimization level for {} (Esc to skip)",
+                    name
+                ))
                 .items(
                     &info
                         .size
