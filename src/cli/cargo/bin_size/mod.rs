@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
+use serde::Deserialize;
 
 use crate::util::{cargo_build::CargoBuildTarget, ensure_cargo_subcommand, PrettyCmd};
 
@@ -48,7 +49,7 @@ impl SelectPerCrateCommand {
     }
 }
 
-async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<()> {
+async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<BloatOutput> {
     let mut cmd = PrettyCmd::new("Running cargo bloat", "cargo");
     cmd.arg("bloat");
 
@@ -108,7 +109,25 @@ async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<(
 
     let output = cmd.output().await.context("failed to run cargo bloat")?;
 
-    eprintln!("Output:\n{}", output);
+    let output: BloatOutput =
+        serde_json::from_str(&output).context("failed to parse bloat output")?;
 
-    Ok(())
+    Ok(output)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct BloatOutput {
+    file_size: u64,
+    text_section_size: u64,
+
+    crates: Vec<BloatCrate>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct BloatCrate {
+    name: String,
+    /// File size in bytes.
+    size: u64,
 }
