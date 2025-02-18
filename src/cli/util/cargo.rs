@@ -120,7 +120,7 @@ pub fn to_original_crate_name(lib_name: Atom) -> Result<Atom> {
             }
 
             for t in &p.targets {
-                if t.kind.contains(&"rlib".to_string()) && lib_name == *t.name {
+                if t.kind.iter().any(|k| k == "lib" || k == "rlib") && lib_name == *t.name {
                     return true;
                 }
             }
