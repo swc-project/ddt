@@ -3,9 +3,11 @@ use std::{
     io::BufReader,
     path::PathBuf,
     process::{Command, Stdio},
+    sync::Arc,
 };
 
 use anyhow::{bail, Context, Result};
+use cached::proc_macro::cached;
 use cargo_metadata::{ArtifactProfile, Message};
 use clap::Parser;
 use is_executable::IsExecutable;
@@ -26,40 +28,40 @@ pub struct BinFile {
 #[derive(Debug, Clone, Parser)]
 pub struct CargoBuildTarget {
     #[clap(long)]
-    lib: bool,
+    pub lib: bool,
 
     #[clap(long)]
-    release: bool,
+    pub release: bool,
 
     #[clap(long)]
-    bin: Option<String>,
+    pub bin: Option<String>,
 
     #[clap(long)]
-    bench: Option<String>,
+    pub bench: Option<String>,
 
     #[clap(long)]
-    benches: bool,
+    pub benches: bool,
 
     #[clap(long)]
-    test: Option<String>,
+    pub test: Option<String>,
 
     #[clap(long)]
-    tests: bool,
+    pub tests: bool,
 
     #[clap(long)]
-    example: Option<String>,
+    pub example: Option<String>,
 
     #[clap(long)]
-    examples: bool,
+    pub examples: bool,
 
     #[clap(long)]
-    features: Option<Vec<String>>,
+    pub features: Option<Vec<String>>,
 
     #[clap(long = "package", short = 'p')]
-    packages: Vec<String>,
+    pub packages: Vec<String>,
 
     #[clap(long)]
-    profile: Option<String>,
+    pub profile: Option<String>,
 }
 
 /// Compile one or more targets.
@@ -191,19 +193,37 @@ pub fn compile(config: &CargoBuildTarget) -> Result<Vec<BinFile>> {
     Ok(binaries)
 }
 
-pub fn cargo_target_dir() -> Result<PathBuf> {
+#[cached(result = true)]
+pub fn run_cargo_metadata_no_deps() -> Result<Arc<cargo_metadata::Metadata>> {
     let md = cargo_metadata::MetadataCommand::new()
         .no_deps()
         .exec()
         .context("cargo metadata failed")?;
 
-    Ok(md.target_directory.into())
+    Ok(Arc::new(md))
 }
-pub fn cargo_workspace_dir() -> Result<PathBuf> {
+
+#[cached(result = true)]
+pub fn run_cargo_metadata_with_deps() -> Result<Arc<cargo_metadata::Metadata>> {
     let md = cargo_metadata::MetadataCommand::new()
-        .no_deps()
         .exec()
         .context("cargo metadata failed")?;
 
-    Ok(md.workspace_root.into())
+    Ok(Arc::new(md))
+}
+
+pub fn cargo_target_dir() -> Result<PathBuf> {
+    let md = run_cargo_metadata_no_deps()?;
+
+    Ok(md.target_directory.clone().into())
+}
+
+pub fn cargo_workspace_dir() -> Result<PathBuf> {
+    let md = run_cargo_metadata_no_deps()?;
+
+    Ok(md.workspace_root.clone().into())
+}
+
+pub fn cargo_root_manifest() -> Result<PathBuf> {
+    Ok(cargo_workspace_dir()?.join("Cargo.toml"))
 }

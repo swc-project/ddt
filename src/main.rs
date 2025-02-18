@@ -30,11 +30,9 @@ async fn main() -> Result<()> {
 
     let start = std::time::Instant::now();
 
-    info!("Start");
-
     args.run().await?;
 
-    info!("End in {:?}", start.elapsed());
+    info!("Done in {:?}", start.elapsed());
 
     Ok(())
 }

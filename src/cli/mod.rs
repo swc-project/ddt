@@ -1,8 +1,10 @@
+use self::cargo::CargoCommand;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use self::{extra::ExtraCommand, git::GitCommand, profile::ProfileCommand};
 
+mod cargo;
 mod extra;
 mod git;
 mod profile;
@@ -26,6 +28,9 @@ impl CliArgs {
             InnerCmd::X(cmd) => {
                 cmd.run().await?;
             }
+            InnerCmd::Cargo(cmd) => {
+                cmd.run().await?;
+            }
         }
 
         Ok(())
@@ -34,6 +39,7 @@ impl CliArgs {
 
 #[derive(Debug, Subcommand)]
 enum InnerCmd {
+    Cargo(CargoCommand),
     Profile(ProfileCommand),
     Git(GitCommand),
     X(ExtraCommand),

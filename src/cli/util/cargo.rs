@@ -1,11 +1,15 @@
 use std::process::Command;
 
 use anyhow::{bail, Context, Result};
+use cached::proc_macro::cached;
 use dialoguer::Select;
+use hstr::Atom;
 use tempfile::tempdir;
 use tracing::info;
 
-use crate::util::cargo_build::{cargo_workspace_dir, compile, BinFile, CargoBuildTarget};
+use crate::util::cargo_build::{
+    cargo_workspace_dir, compile, run_cargo_metadata_with_deps, BinFile, CargoBuildTarget,
+};
 
 pub async fn get_one_binary_using_cargo(
     build_target: &CargoBuildTarget,
@@ -98,4 +102,31 @@ pub async fn get_one_binary_using_cargo(
     );
 
     Ok((bin, envs))
+}
+
+#[cached(result = true)]
+pub fn to_original_crate_name(lib_name: Atom) -> Result<Atom> {
+    if matches!(&*lib_name, "std" | "core" | "alloc" | "proc_macro") {
+        return Ok(lib_name);
+    }
+
+    let md = run_cargo_metadata_with_deps().context("failed to run cargo metadata")?;
+
+    md.packages
+        .iter()
+        .find(|p| {
+            if lib_name == *p.name {
+                return true;
+            }
+
+            for t in &p.targets {
+                if t.kind.iter().any(|k| k == "lib" || k == "rlib") && lib_name == *t.name {
+                    return true;
+                }
+            }
+
+            false
+        })
+        .map(|pkg| Atom::from(&*pkg.name))
+        .ok_or_else(|| anyhow::anyhow!("failed to find the crate for library: {}", lib_name))
 }

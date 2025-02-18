@@ -5,7 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "ddt"
 repository = "https://github.com/swc-project/ddt.git"
-version = "0.3.0"
+version = "0.3.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,18 +15,22 @@ anyhow = "1.0.0"
 async-recursion = "1.0.5"
 async-trait = "0.1.73"
 auto_impl = "1.1.0"
+cached = "0.54.0"
 cargo_metadata = "0.15.2"
 chrono = "0.4.31"
 clap = { version = "4.0.29", features = ["derive"] }
 dialoguer = { version = "0.11.0", features = ["completion"] }
 futures = "0.3.25"
 hstr = { version = "0.2.5", features = ["serde"] }
+humansize = "2.1.3"
+indexmap = "2.7.1"
 inferno = "0.11.17"
 is_executable = "1.0.1"
 once_cell = "1.18.0"
 rayon = "1.7.0"
 regex = "1.9.5"
 reqwest = "0.11.22"
+rustc-hash = "2.1.1"
 semver = { version = "1.0.18", features = ["serde"] }
 serde = { version = "1.0.148", features = ["derive"] }
 serde_json = "1.0.89"
@@ -41,8 +45,10 @@ tokio = { version = "1.22.0", features = [
     "fs",
     "sync",
 ] }
+toml_edit = { version = "0.22.24", features = ["serde"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["fmt"] }
+which = { version = "7.0.2", features = ["tracing"] }
 
 [profile.release]
 lto = "off"
