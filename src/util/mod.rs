@@ -14,6 +14,18 @@ where
     op.await
 }
 
+pub async fn ensure_bin_exists(name: &str) -> Result<()> {
+    if which::which(name).is_err() {
+        Err(anyhow::anyhow!("{} is not installed", name))
+    } else {
+        Ok(())
+    }
+}
+
+pub async fn ensure_cargo_subcommand(name: &str) -> Result<()> {
+    ensure_bin_exists(&format!("cargo-{}", name)).await
+}
+
 pub(crate) struct PrettyCmd {
     description: String,
     inner: Command,
