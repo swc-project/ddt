@@ -106,6 +106,10 @@ pub async fn get_one_binary_using_cargo(
 
 #[cached(result = true)]
 pub fn to_original_crate_name(lib_name: Atom) -> Result<Atom> {
+    if lib_name == "std" {
+        return Ok(lib_name);
+    }
+
     let md = run_cargo_metadata_with_deps().context("failed to run cargo metadata")?;
 
     md.packages
