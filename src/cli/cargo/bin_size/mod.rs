@@ -2,6 +2,7 @@ use std::fmt::{self, Display};
 
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
+use humansize::{format_size, DECIMAL};
 use indexmap::IndexMap;
 use rustc_hash::{FxBuildHasher, FxHashMap};
 use serde::Deserialize;
@@ -70,7 +71,7 @@ impl SelectPerCrateCommand {
         for (name, info) in crates {
             eprintln!("{}", name);
             for (opt_level, size) in info.size {
-                eprintln!("  {} : {}", opt_level, size);
+                eprintln!("  {} : {}", opt_level, format_size(size, DECIMAL));
             }
         }
 
