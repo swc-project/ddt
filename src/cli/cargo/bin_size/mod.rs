@@ -125,8 +125,9 @@ impl SelectPerCrateCommand {
         });
 
         for (name, info) in crates {
-            let name =
-                to_original_crate_name(name).context("failed to get the original crate name")?;
+            let Ok(name) = to_original_crate_name(name) else {
+                continue;
+            };
 
             let selected = dialoguer::Select::new()
                 .with_prompt(format!("Select the optimization level for {}", name))
