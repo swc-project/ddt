@@ -106,7 +106,7 @@ pub async fn get_one_binary_using_cargo(
 
 #[cached(result = true)]
 pub fn to_original_crate_name(lib_name: Atom) -> Result<Atom> {
-    if lib_name == "std" {
+    if matches!(&*lib_name, "std" | "core" | "alloc" | "proc_macro") {
         return Ok(lib_name);
     }
 
