@@ -1,5 +1,9 @@
+use std::fmt::{self, Display};
+
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
+use indexmap::IndexMap;
+use rustc_hash::{FxBuildHasher, FxHashMap};
 use serde::Deserialize;
 
 use crate::util::{cargo_build::CargoBuildTarget, ensure_cargo_subcommand, PrettyCmd};
@@ -40,16 +44,41 @@ impl SelectPerCrateCommand {
             .await
             .context("You can install bloat by `cargo install cargo-bloat`")?;
 
+        let mut crates = IndexMap::<_, _, FxBuildHasher>::default();
+
         if self.compare {
-            let for_perf = run_bloat(&self.build_target, "3").await?;
-            let for_size = run_bloat(&self.build_target, "s").await?;
+            let for_perf = run_bloat(&self.build_target, OptLevel::Performance).await?;
+            let for_size = run_bloat(&self.build_target, OptLevel::Size).await?;
+
+            for (opt_level, output) in [
+                (OptLevel::Performance, for_perf),
+                (OptLevel::Size, for_size),
+            ] {
+                for crate_ in output.crates {
+                    let info = crates
+                        .entry(crate_.name.clone())
+                        .or_insert_with(|| CrateInfo {
+                            name: crate_.name.clone(),
+                            size: PerOptLevel::default(),
+                        });
+
+                    info.size.insert(opt_level, crate_.size);
+                }
+            }
+        }
+
+        for (name, info) in crates {
+            eprintln!("{}", name);
+            for (opt_level, size) in info.size {
+                eprintln!("  {} : {}", opt_level, size);
+            }
         }
 
         Ok(())
     }
 }
 
-async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<BloatOutput> {
+async fn run_bloat(build_target: &CargoBuildTarget, opt_level: OptLevel) -> Result<BloatOutput> {
     let mut cmd = PrettyCmd::new("Running cargo bloat", "cargo");
     cmd.arg("bloat");
 
@@ -61,7 +90,7 @@ async fn run_bloat(build_target: &CargoBuildTarget, opt_level: &str) -> Result<B
     cmd.arg("--message-format").arg("json");
 
     cmd.env("CARGO_PROFILE_RELEASE_DEBUG", "1");
-    cmd.env("CARGO_PROFILE_RELEASE_OPT_LEVEL", opt_level);
+    cmd.env("CARGO_PROFILE_RELEASE_OPT_LEVEL", opt_level.to_string());
 
     if build_target.release {
         cmd.arg("--release");
@@ -130,4 +159,32 @@ struct BloatCrate {
     name: String,
     /// File size in bytes.
     size: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum OptLevel {
+    /// `3`
+    Performance,
+    /// `s`
+    Size,
+    /// `z`
+    SizeWithLoopVec,
+}
+
+impl Display for OptLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            OptLevel::Performance => write!(f, "3"),
+            OptLevel::Size => write!(f, "s"),
+            OptLevel::SizeWithLoopVec => write!(f, "z"),
+        }
+    }
+}
+
+type PerOptLevel<T> = FxHashMap<OptLevel, T>;
+
+#[derive(Debug)]
+struct CrateInfo {
+    name: String,
+    size: PerOptLevel<u64>,
 }
