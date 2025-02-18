@@ -64,7 +64,7 @@ impl SelectPerCrateCommand {
             toml["profile"] = table();
         }
 
-        if toml["profile"]
+        if !toml["profile"]
             .as_table_mut()
             .unwrap()
             .contains_key(profile_name)
