@@ -59,6 +59,11 @@ impl PrettyCmd {
         self
     }
 
+    pub fn env(&mut self, key: impl AsRef<OsStr>, value: impl AsRef<OsStr>) -> &mut Self {
+        self.inner.env(key, value);
+        self
+    }
+
     pub async fn exec(&mut self) -> Result<()> {
         info!("Running: {}\n{:?}", self.description, self.inner);
 

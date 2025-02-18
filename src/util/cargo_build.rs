@@ -26,40 +26,40 @@ pub struct BinFile {
 #[derive(Debug, Clone, Parser)]
 pub struct CargoBuildTarget {
     #[clap(long)]
-    lib: bool,
+    pub lib: bool,
 
     #[clap(long)]
-    release: bool,
+    pub release: bool,
 
     #[clap(long)]
-    bin: Option<String>,
+    pub bin: Option<String>,
 
     #[clap(long)]
-    bench: Option<String>,
+    pub bench: Option<String>,
 
     #[clap(long)]
-    benches: bool,
+    pub benches: bool,
 
     #[clap(long)]
-    test: Option<String>,
+    pub test: Option<String>,
 
     #[clap(long)]
-    tests: bool,
+    pub tests: bool,
 
     #[clap(long)]
-    example: Option<String>,
+    pub example: Option<String>,
 
     #[clap(long)]
-    examples: bool,
+    pub examples: bool,
 
     #[clap(long)]
-    features: Option<Vec<String>>,
+    pub features: Option<Vec<String>>,
 
     #[clap(long = "package", short = 'p')]
-    packages: Vec<String>,
+    pub packages: Vec<String>,
 
     #[clap(long)]
-    profile: Option<String>,
+    pub profile: Option<String>,
 }
 
 /// Compile one or more targets.
