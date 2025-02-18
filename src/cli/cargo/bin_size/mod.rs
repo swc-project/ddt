@@ -6,7 +6,7 @@ use humansize::{format_size, DECIMAL};
 use indexmap::IndexMap;
 use rustc_hash::FxBuildHasher;
 use serde::Deserialize;
-use toml_edit::{value, DocumentMut};
+use toml_edit::{table, value, DocumentMut};
 
 use crate::util::{
     cargo_build::{cargo_root_manifest, CargoBuildTarget},
@@ -54,9 +54,33 @@ impl SelectPerCrateCommand {
             .parse::<DocumentMut>()
             .context("failed to parse the root cargo.toml")?;
 
-        let profile = self.build_target.profile.as_deref().unwrap_or("release");
+        let profile_name = self.build_target.profile.as_deref().unwrap_or("release");
 
-        let package_table = toml["profile"][profile]["package"]
+        if !toml["profile"].is_table() {
+            toml["profile"] = table();
+        }
+
+        if toml["profile"]
+            .as_table_mut()
+            .unwrap()
+            .contains_key(profile_name)
+        {
+            toml["profile"][profile_name] = table();
+        }
+
+        if !toml["profile"][profile_name].is_table() {
+            toml["profile"][profile_name] = table();
+        }
+
+        if !toml["profile"][profile_name]
+            .as_table_mut()
+            .unwrap()
+            .contains_key("package")
+        {
+            toml["profile"][profile_name]["package"] = table();
+        }
+
+        let package_table = toml["profile"][profile_name]["package"]
             .as_table_mut()
             .context("failed to get the package table")?;
 
