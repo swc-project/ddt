@@ -134,7 +134,14 @@ impl SelectPerCrateCommand {
             if let Some(selected) = selected {
                 let (selected_opt_level, _) = info.size.get_index(selected).unwrap();
 
-                package_table[&*name] = value(selected_opt_level.to_string());
+                let mut t = table();
+                {
+                    t.as_table_mut()
+                        .unwrap()
+                        .insert("opt-level", value(selected_opt_level.to_string()));
+                }
+
+                package_table[&*name] = t;
             }
         }
 
